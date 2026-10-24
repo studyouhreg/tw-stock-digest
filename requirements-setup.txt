@@ -1,2 +1,2 @@
 # Only for the one-time local OAuth setup. The daily pipeline uses Python stdlib.
-google-auth-oauthlib>=1.2.2,<2
+google-auth-oauthlib>=1.5.0,<2
