@@ -81,8 +81,10 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
 
     target_date=None (the scheduled default) accepts whatever trading day the
     official snapshot currently reports, as long as it is newer than what is
-    already saved. The official endpoints lag by about a trading day, so
-    comparing against today's calendar date would skip every run. A string
+    already saved. Comparing against today's calendar date instead would skip
+    whenever the snapshot is not yet updated (GitHub schedule delays, a late
+    source update) and would lose that day for good, because the endpoint
+    cannot be backfilled. Holidays and closures simply find nothing new. A string
     target_date keeps the strict check: the source must report exactly that day.
     """
     if target_date is not None:

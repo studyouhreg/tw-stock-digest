@@ -2,9 +2,9 @@ name: Taiwan stock digest
 
 on:
   schedule:
-    # 08:17, 13:17 and 19:17 Asia/Taipei (UTC+8), every day. The official
-    # snapshots lag about one trading day and update at varying times, so poll
-    # several times; runs with nothing new are skipped and commit nothing.
+    # 08:17, 13:17 and 19:17 Asia/Taipei (UTC+8), every day. The snapshot's
+    # update time is not guaranteed, so poll several times; a later run picks
+    # up a day an earlier run missed. Runs with nothing new commit nothing.
     # GitHub may delay scheduled jobs.
     - cron: '17 0,5,11 * * *'
   workflow_dispatch:
