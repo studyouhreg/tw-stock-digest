@@ -67,6 +67,35 @@ python -m tw_stock_digest --no-drive --repo-dir data
 
 整理後行情、摘要與分析提交到 git；金鑰、原始 JSON 和 demo 不提交。`drive.file` 只要求本程式建立／授權給本程式的檔案存取範圍，無需授權整個 Drive。此儲存庫目前公開，因此 data 與自選摘要也是公開內容。
 
+## 選股策略與回測
+
+`tw_stock_digest/strategies/` 用 strategy pattern 實作 13 個策略：9 個需要歷史資料（動能、盤中動能、隔夜反轉、52 週高點、低波動、短期反轉、均線、外資、投信），4 個只需當日快照的盤後篩選（收盤漲停、強勢收高、開高跳空、成交值集中）。所有策略都實作同一個介面 `select(view)`，回測引擎、盤後篩選和測試都只依賴這個介面。研究依據見 [docs/strategies/research.md](docs/strategies/research.md)，驗收結果見 [docs/strategies/acceptance.md](docs/strategies/acceptance.md)。
+
+```bash
+# 1. 下載官方歷史日資料到 cache/（不進 git；證交所會擋快速請求，三年約需 2 小時，可中斷續跑）
+python -m tw_stock_digest.history --start 2023-10-02 --end 2026-10-23 \
+  --datasets twse_exright,tpex_exright,twse_price,tpex_price
+python -m tw_stock_digest.history --start 2025-01-02 --end 2026-10-23 --datasets twse_inst,tpex_inst
+# 2. 資料驗收＋全部策略回測，輸出 docs/strategies/acceptance.{md,json}
+python -m tw_stock_digest.acceptance
+```
+
+新增策略只要繼承 `Strategy`、實作 `score(view, symbol)`（分數越高越優先，回傳 `None` 表示排除），再加上 `@register`：
+
+```python
+from tw_stock_digest.strategies import Strategy, register
+
+@register
+class MyIdea(Strategy):
+    name, label, description = 'my_idea', '我的策略', '過去 20 日報酬最高者'
+    rebalance, lookback = 'weekly', 20
+
+    def score(self, view, symbol):
+        return view.compound(symbol, 20)   # view 只看得到當日收盤以前的資料
+```
+
+回測規則：訊號用 t 日收盤、t+1 日開盤成交；開盤漲停買不到、沒成交或開盤跌停賣不掉；手續費 0.1425%、證交稅 0.3%；每期等權 20 檔；股票範圍限 20 日均成交值 ≥ 2,000 萬元的普通股。
+
 ## 已有專案與取捨
 
 | 選項 | 適合什麼 | 本專案的取捨 |
