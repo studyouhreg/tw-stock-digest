@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tw-stock-digest"
+version = "0.1.0"
+description = "Taiwan stock snapshots to Google Drive with optional Claude summaries"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+tw-stock-digest = "tw_stock_digest.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["tw_stock_digest*"]

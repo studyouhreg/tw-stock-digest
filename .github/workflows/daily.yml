@@ -1,0 +1,58 @@
+name: Taiwan stock digest
+
+on:
+  schedule:
+    # 19:17 Asia/Taipei (UTC+8), Monday-Friday. GitHub may delay scheduled jobs.
+    - cron: '17 11 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      demo:
+        description: 'Synthetic demo; never contacts Drive or Claude'
+        type: boolean
+        default: true
+      expected_date:
+        description: 'Optional YYYY-MM-DD to validate the latest source snapshot (not backfill)'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tw-stock-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Collect, archive and optionally analyze
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENABLE_ANALYSIS: ${{ vars.ENABLE_ANALYSIS || 'false' }}
+          CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-haiku-5-5' }}
+          WATCHLIST: ${{ vars.WATCHLIST || '0050,2330,2317,2454,6488' }}
+          DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.demo && 'true' || 'false' }}
+          REQUEST_DATE: ${{ inputs.expected_date }}
+        run: |
+          args=()
+          if [[ "$DEMO" == "true" ]]; then args+=(--demo); fi
+          if [[ -n "$REQUEST_DATE" ]]; then args+=(--date "$REQUEST_DATE"); fi
+          python -m tw_stock_digest "${args[@]}"
+      - name: Retain collection even when analysis or Drive fails
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tw-stock-digest-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/
+          retention-days: 14
+          if-no-files-found: warn
