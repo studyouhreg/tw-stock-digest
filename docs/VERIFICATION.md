@@ -29,6 +29,8 @@
 - 2026-10-24 重新從兩個官方來源取得的最新回傳交易日期均為 **2026-10-22**；這是來源日期，不代表 10 月 24 日即時行情。
 - 本次共 2,340 筆：上市 1,330（股票類 1,088、ETF 242）；上櫃 1,010（股票類 892、ETF 118）。整理後資料保存於 `data/daily/2026-10-22/`。
 - 原始來源分別 1,383 與 13,032 筆；本次原始 JSON 留於本機 output，未提交到 git，也沒有對應的 Actions artifact。後續由 Actions 收集的原始檔會上傳 artifact。
+- 程式與資料已提交至 `main`：`721d0b99f444529337fc81f3e56a7798dd70c2d1`。GitHub tree 與本機已驗證版本完全一致。
+- [本版 GitHub Actions 驗證](https://github.com/studyouhreg/tw-stock-digest/actions/runs/40083180385)：Python 3.11、3.12 均通過 42 項測試、demo、OAuth 工具 help、已保存資料的校驗碼驗證與提交腳本語法檢查。
 
 ## 程式審查與修正
 

@@ -35,4 +35,4 @@
 - [x] Implement the export module and pipeline/CLI integration; verify all tests pass.
 - [x] Update the workflow, setup and data documentation; collect a fresh official snapshot and publish it locally.
 - [x] Run the suite, YAML/whitespace checks and one independent final review; fix important findings once.
-- [ ] Publish the code and first snapshot to GitHub; verify remote tree and CI, then explain the actual data coverage to the user.
+- [x] Publish the code and first snapshot to GitHub; verify remote tree and CI, then explain the actual data coverage to the user.
