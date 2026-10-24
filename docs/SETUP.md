@@ -83,7 +83,7 @@ gh secret set GDRIVE_FOLDER_ID
 
 若工具已保存憑證、卻在建立 Drive 資料夾時因網路失敗中斷，目前也需要使用新的 `--output` 檔名重新授權；不能直接以同一輸出檔名續跑。
 
-6. 再次手動執行 workflow，將 `demo` 取消勾選。若盤中或假日只有舊資料，結果會是 skipped；盤後再跑即可。確認 Drive 出現交易日期資料夾及 `latest.md`。
+6. 再次手動執行 workflow，將 `demo` 取消勾選。若來源最新交易日已保存，結果會是 skipped（`already_saved`）；待來源更新後再跑即可。確認 Drive 出現交易日期資料夾及 `latest.md`。
 
 ## 3. 啟用 Claude 自動分析
 
@@ -109,13 +109,17 @@ CLI 範例：
 python -m tw_stock_digest --no-drive --watchlist 0050,2330,6488
 ```
 
-`--date YYYY-MM-DD`／Actions 的 `expected_date` 是驗證來源日期。例：今天早上 API 仍回傳昨天，若你確實要保存昨天快照，可指定昨天。來源一旦更新為今天，無法用這個參數取得更早資料。
+不指定日期時（排程預設），程式收集來源目前回報的交易日，只要它比 `data/latest.json` 更新，或同日資料尚未完整保存（例如上次 Drive／分析失敗）。已完整保存則 skipped（`already_saved`），不重複提交。
+
+`--date YYYY-MM-DD`／Actions 的 `expected_date` 改為嚴格驗證：來源日期必須剛好是指定日期，較舊則 skipped，較新則失敗。來源一旦更新為較新日期，無法用這個參數取得更早資料。
 
 ## 5. 失敗排查
 
 | 情況 | 處理 |
 |---|---|
-| `status=skipped`，來源日期較舊 | 檢查是否休市、尚未盤後或來源更新延遲；不需新增 AI 金鑰 |
+| `status=skipped`，`reason=already_saved` | 正常：來源尚未出現新交易日，下一次排程會再檢查 |
+| `status=skipped`，`reason=stale_or_nontrading_day` | 只在指定 `--date` 時出現；來源尚未更新到該日，可能休市或延遲 |
+| `status=skipped`，`reason=older_than_saved` | 來源回傳比已保存更舊的日期，通常是來源暫時異常，稍後重跑 |
 | `stage=configuration` | 檢查兩個 Drive secrets 是否完整；OAuth 是否到期；是否開啟分析卻沒有 key |
 | `stage=collect` | 下載 artifact 查看已收集的 raw；可能是 HTTP 限流、欄位異動、OHLC 或日期不一致 |
 | `stage=upload_collection` | 檢查 Drive API 是否啟用、資料夾是否由本 app 建立、儲存容量與 OAuth scope |
