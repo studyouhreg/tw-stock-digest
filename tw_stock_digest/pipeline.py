@@ -5,9 +5,10 @@ import hashlib
 import io
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .analysis import analyze, analysis_key, make_prompt
-from .demo import fetch_demo
+from .demo import DEMO_DATE, fetch_demo
 from .http import HttpClient
 from .market import SOURCES, normalize, build_context
 from .report import factual_report
@@ -47,12 +48,48 @@ def can_update_latest(existing, trade_date):
     return dt.date.fromisoformat(trade_date) >= previous
 
 
+TAIPEI = ZoneInfo('Asia/Taipei')
+FINISHED_ANALYSIS = ('generated', 'cached')
+
+
+def saved_latest(archive_root, output):
+    """Return the most recent fully saved snapshot record, or None."""
+    path = Path(archive_root) / 'latest.json' if archive_root is not None else Path(output) / 'latest.json'
+    if not path.exists():
+        return None
+    record = json.loads(path.read_bytes())
+    if not isinstance(record, dict) or (archive_root is not None and record.get('demo') is not False):
+        raise ValueError('Invalid saved latest record')
+    dt.date.fromisoformat(record['trade_date'])
+    return record
+
+
+def already_saved(record, trade_date, analysis_wanted):
+    """True when a rerun for this source date has nothing left to do."""
+    if record is None or record['trade_date'] != trade_date:
+        return False
+    # Only the repository record distinguishes a partly finished collection.
+    if record.get('snapshot_status', 'complete') != 'complete':
+        return False
+    return not analysis_wanted or record.get('analysis') in FINISHED_ANALYSIS
+
+
 def run(target_date, output, watchlist, *, demo=False, drive=None,
         analysis_config=None, fetch=None, analyzer=analyze, archive_root=None,
         configure_remote=None, analysis_requested=False):
-    target_date = dt.date.fromisoformat(target_date).isoformat()
+    """Collect one snapshot.
+
+    target_date=None (the scheduled default) accepts whatever trading day the
+    official snapshot currently reports, as long as it is newer than what is
+    already saved. The official endpoints lag by about a trading day, so
+    comparing against today's calendar date would skip every run. A string
+    target_date keeps the strict check: the source must report exactly that day.
+    """
+    if target_date is not None:
+        target_date = dt.date.fromisoformat(target_date).isoformat()
     output = Path(output)
     if demo:
+        target_date = target_date or DEMO_DATE
         output = output / 'demo'
         drive, analysis_config, fetch = None, None, fetch_demo
         archive_root = None
@@ -76,11 +113,24 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         context = build_context(quotes, watchlist)
         trade_date = context['trade_date']
         state['source_date'] = trade_date
-        if trade_date < target_date:
-            state.update(status='skipped', reason='stale_or_nontrading_day')
-            return state
-        if trade_date > target_date:
-            raise ValueError('Latest snapshot is newer than requested date; historical backfill is unavailable')
+        if target_date is not None:
+            if trade_date < target_date:
+                state.update(status='skipped', reason='stale_or_nontrading_day')
+                return state
+            if trade_date > target_date:
+                raise ValueError('Latest snapshot is newer than requested date; historical backfill is unavailable')
+        else:
+            if trade_date > dt.datetime.now(TAIPEI).date().isoformat():
+                raise ValueError('Source trade date is in the future')
+            saved = saved_latest(archive_root, output)
+            if saved is not None:
+                state['saved_date'] = saved['trade_date']
+            if saved is not None and trade_date < saved['trade_date']:
+                state.update(status='skipped', reason='older_than_saved')
+                return state
+            if already_saved(saved, trade_date, bool(analysis_config or analysis_requested)):
+                state.update(status='skipped', reason='already_saved')
+                return state
         state['stage'] = 'write_collection'
         day = output / 'daily' / trade_date
         analysis_status = 'pending' if analysis_config or analysis_requested else 'disabled'

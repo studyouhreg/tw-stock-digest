@@ -5,11 +5,17 @@ import os
 from pathlib import Path
 import re
 import sys
-from zoneinfo import ZoneInfo
 
 from .demo import DEMO_DATE
 from .drive import Drive
 from .pipeline import run
+
+
+SKIP_MESSAGES = {
+    'stale_or_nontrading_day': '來源尚無指定的預期日期，可能休市或延遲更新；',
+    'already_saved': '來源最新交易日已完整保存，無新資料；',
+    'older_than_saved': '來源回傳的交易日比已保存的還舊；',
+}
 
 
 def iso_date(value):
@@ -23,7 +29,8 @@ def iso_date(value):
 
 def main():
     parser = argparse.ArgumentParser(description='臺股盤後收集 → GitHub／可選 Drive → 可選 Claude 摘要')
-    parser.add_argument('--date', type=iso_date, help='預期來源日期；最新快照端點不提供歷史回補')
+    parser.add_argument('--date', type=iso_date,
+                        help='嚴格驗證來源必須是此日期；省略時收集來源最新且尚未保存的交易日（不提供歷史回補）')
     parser.add_argument('--output', type=Path, default=Path('output'))
     parser.add_argument('--repo-dir', type=Path, help='將整理後資料保存到 git 可追蹤目錄，例如 data')
     parser.add_argument('--watchlist', default=os.getenv('WATCHLIST', '0050,2330,2317,2454,6488'))
@@ -34,7 +41,8 @@ def main():
     watchlist = list(dict.fromkeys(s.strip().upper() for s in args.watchlist.split(',') if s.strip()))
     if len(watchlist) > 50 or any(not re.fullmatch(r'[0-9A-Z]{4,6}', s) for s in watchlist):
         parser.error('watchlist must contain at most 50 stock/ETF codes')
-    target = args.date or (DEMO_DATE if args.demo else dt.datetime.now(ZoneInfo('Asia/Taipei')).date().isoformat())
+    # Without --date, accept the newest snapshot the source reports that is not yet saved.
+    target = args.date or (DEMO_DATE if args.demo else None)
     if args.demo and target != DEMO_DATE:
         parser.error(f'demo uses synthetic data dated {DEMO_DATE}; omit --date')
     enabled = args.analyze or os.getenv('ENABLE_ANALYSIS', 'false').lower() == 'true'
@@ -63,7 +71,8 @@ def main():
         with open(summary, 'a', encoding='utf-8') as handle:
             handle.write(f"## 臺股資料工作：{result['status']}\n\n```json\n{json.dumps(result, ensure_ascii=False, indent=2)}\n```\n")
             if result['status'] == 'skipped':
-                handle.write('\n來源尚無預期日期，可能休市或延遲更新；未執行 Claude、未更新 Drive。\n')
+                handle.write('\n' + SKIP_MESSAGES.get(result.get('reason'), '本次略過。')
+                             + '未執行 Claude、未更新 Drive。\n')
     return 0
 
 
