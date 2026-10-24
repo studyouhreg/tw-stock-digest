@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 from .demo import DEMO_DATE
 from .drive import Drive
-from .pipeline import run, write, json_bytes
+from .pipeline import run
 
 
 def iso_date(value):
@@ -22,12 +22,13 @@ def iso_date(value):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='臺股盤後收集 → Drive → 可選 Claude 摘要')
+    parser = argparse.ArgumentParser(description='臺股盤後收集 → GitHub／可選 Drive → 可選 Claude 摘要')
     parser.add_argument('--date', type=iso_date, help='預期來源日期；最新快照端點不提供歷史回補')
     parser.add_argument('--output', type=Path, default=Path('output'))
+    parser.add_argument('--repo-dir', type=Path, help='將整理後資料保存到 git 可追蹤目錄，例如 data')
     parser.add_argument('--watchlist', default=os.getenv('WATCHLIST', '0050,2330,2317,2454,6488'))
     parser.add_argument('--demo', action='store_true', help='固定日期的合成資料；不呼叫雲端')
-    parser.add_argument('--no-drive', action='store_true', help='只保存本機與 Actions artifact')
+    parser.add_argument('--no-drive', action='store_true', help='略過 Google Drive；仍可使用 --repo-dir')
     parser.add_argument('--analyze', action='store_true', help='啟用一次付費 Claude API 呼叫或重用快取')
     args = parser.parse_args()
     watchlist = list(dict.fromkeys(s.strip().upper() for s in args.watchlist.split(',') if s.strip()))
@@ -36,23 +37,22 @@ def main():
     target = args.date or (DEMO_DATE if args.demo else dt.datetime.now(ZoneInfo('Asia/Taipei')).date().isoformat())
     if args.demo and target != DEMO_DATE:
         parser.error(f'demo uses synthetic data dated {DEMO_DATE}; omit --date')
-    try:
-        enabled = args.analyze or os.getenv('ENABLE_ANALYSIS', 'false').lower() == 'true'
+    enabled = args.analyze or os.getenv('ENABLE_ANALYSIS', 'false').lower() == 'true'
+
+    def configure_remote():
         config = None
-        if enabled and not args.demo:
+        if enabled:
             model = os.getenv('CLAUDE_MODEL', 'claude-haiku-5-5').strip()
             key = os.getenv('ANTHROPIC_API_KEY', '').strip()
             if not key or not model:
                 raise ValueError('Claude configuration missing')
             config = dict(model=model, key=key)
-        drive = None if args.demo or args.no_drive else Drive.from_env()
-    except Exception as exc:
-        state = dict(status='failed', stage='configuration', error_type=type(exc).__name__)
-        write(args.output / 'status.json', json_bytes(state))
-        print('Configuration failed. Check Drive OAuth credentials and Claude settings; see docs/SETUP.md.', file=sys.stderr)
-        return 1
+        drive = None if args.no_drive else Drive.from_env()
+        return drive, config
+
     try:
-        result = run(target, args.output, watchlist, demo=args.demo, drive=drive, analysis_config=config)
+        result = run(target, args.output, watchlist, demo=args.demo, archive_root=args.repo_dir,
+                     configure_remote=configure_remote, analysis_requested=enabled)
     except Exception:
         status_path = args.output / 'demo' / 'status.json' if args.demo else args.output / 'status.json'
         print(f'Pipeline failed. Collected files and stage/error type are retained in {status_path}.', file=sys.stderr)

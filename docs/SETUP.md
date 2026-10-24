@@ -2,7 +2,7 @@
 
 ## 1. 建立 GitHub 儲存庫
 
-本次專案的儲存庫是 [studyouhreg/tw-stock-digest](https://github.com/studyouhreg/tw-stock-digest)。使用此儲存庫時，可直接下載程式，再前往第 2 節設定 Google Drive：
+本次專案的儲存庫是 [studyouhreg/tw-stock-digest](https://github.com/studyouhreg/tw-stock-digest)。已能直接在 GitHub 保存每日資料，不必先設定 Drive。若要在本機使用或之後設定 Google Drive，可下載程式：
 
 ```bash
 git clone https://github.com/studyouhreg/tw-stock-digest.git
@@ -25,7 +25,23 @@ GitHub CLI 不是必需；亦可在 GitHub 建立儲存庫後使用一般 git pu
 
 先到 **Actions → Taiwan stock digest → Run workflow**，保留 `demo=true`。成功後下載 `tw-stock-digest-...` artifact，檢查 `demo/latest.md`。CI 也會驗證單元測試與 demo。
 
-## 2. 個人 Google Drive：只做一次 OAuth 授權
+### 直接存回 GitHub（預設方式）
+
+在預設分支 main 執行 workflow，取消 `demo` 勾選。成功收集後會由 bot 將 CSV、摘要與 manifest 提交到 `data/daily/YYYY-MM-DD/`，最新摘要是 `data/latest.md`。demo 不提交資料；休市或來源尚未更新時，不新增當日資料。
+
+每日 workflow 已設定 `contents: write`，不需要另建 GitHub token。如果推送被擋，檢查儲存庫的 Actions Workflow permissions 與分支規則是否允許 bot 寫入。它只提交 data，遇到其他人同時修改分支會正常拒絕推送，不會 force push；可重新跑一次。
+
+原始 JSON 在 Actions artifact 保留 14 日；若需長期原始檔保存，再設定下方 Drive。Claude 同樣可以之後再啟用。
+
+本機收集並產生相同資料目錄：
+
+```bash
+python -m tw_stock_digest --no-drive --repo-dir data
+```
+
+此指令只產生／更新檔案，不自動 git push。
+
+## 2. 可選：個人 Google Drive，一次 OAuth 授權
 
 個人 My Drive 不使用「分享資料夾給 service account」作為預設方案：service account 沒有自己的儲存配額，不能藉此成為一般 My Drive 檔案擁有者。本專案用你的 OAuth 身分，且只要求 `drive.file`。
 

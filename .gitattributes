@@ -1,0 +1,3 @@
+# Preserve archive bytes: manifest hashes include exact line endings.
+data/** -text
+data/**/*.csv whitespace=cr-at-eol

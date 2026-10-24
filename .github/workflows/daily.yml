@@ -24,12 +24,18 @@ concurrency:
 
 jobs:
   digest:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.demo && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v7
         with:
-          persist-credentials: false
+          persist-credentials: true
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
@@ -41,13 +47,15 @@ jobs:
           ENABLE_ANALYSIS: ${{ vars.ENABLE_ANALYSIS || 'false' }}
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-haiku-5-5' }}
           WATCHLIST: ${{ vars.WATCHLIST || '0050,2330,2317,2454,6488' }}
-          DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.demo && 'true' || 'false' }}
           REQUEST_DATE: ${{ inputs.expected_date }}
         run: |
-          args=()
+          args=(--repo-dir data)
           if [[ "$DEMO" == "true" ]]; then args+=(--demo); fi
           if [[ -n "$REQUEST_DATE" ]]; then args+=(--date "$REQUEST_DATE"); fi
           python -m tw_stock_digest "${args[@]}"
+      - name: Commit validated data even if an optional service failed
+        if: ${{ !cancelled() && env.DEMO != 'true' }}
+        run: bash scripts/commit_data.sh
       - name: Retain collection even when analysis or Drive fails
         if: always()
         uses: actions/upload-artifact@v7

@@ -11,6 +11,7 @@ from .demo import fetch_demo
 from .http import HttpClient
 from .market import SOURCES, normalize, build_context
 from .report import factual_report
+from .repo_archive import publish_snapshot
 
 
 def json_bytes(value):
@@ -47,12 +48,15 @@ def can_update_latest(existing, trade_date):
 
 
 def run(target_date, output, watchlist, *, demo=False, drive=None,
-        analysis_config=None, fetch=None, analyzer=analyze):
+        analysis_config=None, fetch=None, analyzer=analyze, archive_root=None,
+        configure_remote=None, analysis_requested=False):
     target_date = dt.date.fromisoformat(target_date).isoformat()
     output = Path(output)
     if demo:
         output = output / 'demo'
         drive, analysis_config, fetch = None, None, fetch_demo
+        archive_root = None
+        configure_remote, analysis_requested = None, False
     if fetch is None:
         http = HttpClient()
         fetch = lambda market: http.json('GET', SOURCES[market])
@@ -79,7 +83,7 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             raise ValueError('Latest snapshot is newer than requested date; historical backfill is unavailable')
         state['stage'] = 'write_collection'
         day = output / 'daily' / trade_date
-        analysis_status = 'pending' if analysis_config else 'disabled'
+        analysis_status = 'pending' if analysis_config or analysis_requested else 'disabled'
         state['analysis'] = analysis_status
         # Invalidate the published view before overwriting the data it described.
         # Successful paid results live separately in exact-input cache files.
@@ -102,13 +106,23 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         for name, (content, _) in core.items():
             write(day / name, content)
         state['row_count'] = len(quotes)
+        report = core['facts.md'][0]
+        if archive_root is not None:
+            state['stage'] = 'archive_collection'
+            publish_snapshot(day, archive_root, report, analysis_status)
+            state['repository_archive'] = 'saved'
+        # OAuth refresh and optional API configuration may fail. Keep today's
+        # public collection before attempting either service's initialization.
+        if configure_remote is not None:
+            state['stage'] = 'configuration'
+            drive, analysis_config = configure_remote()
+            state['archive'] = 'google_drive' if drive else 'local_only'
         folder = None
         if drive:
             state['stage'] = 'upload_collection'
             folder = drive.folder(drive.root, trade_date)
             for name, (content, mime) in core.items():
                 drive.put(folder, name, content, mime)
-        report = core['facts.md'][0]
         if analysis_config:
             state['stage'] = 'analyze'
             model, key = analysis_config['model'], analysis_config['key']
@@ -118,6 +132,10 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             local_cache = day / cache_name
             if cached is None and local_cache.exists():
                 cached = local_cache.read_bytes()
+            if cached is None and archive_root is not None:
+                repository_cache = Path(archive_root) / 'daily' / trade_date / cache_name
+                if repository_cache.exists():
+                    cached = repository_cache.read_bytes()
             previous = json.loads(cached) if cached is not None else {}
             if isinstance(previous, dict) and previous.get('input_sha256') == fingerprint and previous.get('text'):
                 result = previous
@@ -159,6 +177,9 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         if analysis_config:
             manifest['analysis_input_sha256'] = fingerprint
         write(day / 'manifest.json', json_bytes(manifest))
+        if archive_root is not None:
+            state['stage'] = 'archive_completed'
+            publish_snapshot(day, archive_root, report, state['analysis'])
         if drive:
             drive.put(folder, 'manifest.json', json_bytes(manifest), 'application/json')
         state.update(status='complete', stage='done')
