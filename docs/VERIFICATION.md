@@ -12,6 +12,14 @@
 - 使用上述官方快照離線重播修正後的完整收集流程，仍產出 2,339 筆，manifest 中 8 個檔案 SHA-256 全部吻合。
 - Workflow YAML 可解析，demo 與 OAuth 工具的 help 指令可執行。
 
+## GitHub Actions 雲端驗證
+
+2026-10-24 已上傳至 `studyouhreg/tw-stock-digest` 的 `main`。程式提交 `570fcde398f9e6fc6749c7def07890d6af68b9d4` 的 [Tests 執行記錄](https://github.com/studyouhreg/tw-stock-digest/actions/runs/40053957632) 結果為 success：
+
+- Python 3.11、3.12 兩個 job 均通過測試套件。
+- 兩個環境的 demo 執行與 Google OAuth 設定工具 help 均成功。
+- 本次雲端測試沒有使用 Google 或 Anthropic 憑證。
+
 ## 程式審查與修正
 
 - 示範資料隔離到 `output/demo/`，避免同日期 demo 覆寫真實行情。
@@ -26,6 +34,6 @@
 
 - Google OAuth 桌面授權與真正的 Drive 寫入。
 - Anthropic 帳號模型可用性、付費呼叫與真實 token 用量。
-- GitHub Actions 雲端 runner 執行與排程首次觸發。
+- 每日收集 workflow 的手動／排程首次執行，包含 artifact 上傳及真實官方來源在 runner 上的連線。
 
 沒有把模擬遠端測試等同於上述實際雲端驗證。原始行情是當日測試快照，不能視為之後的最新市場資訊。
