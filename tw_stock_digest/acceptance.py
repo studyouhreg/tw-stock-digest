@@ -365,6 +365,8 @@ def check_fundamentals(panel, cache):
         check('月營收 3 個月合計 vs 季報單季營收', median < 0.01,
               f'{len(gaps):,} 個公司季度，差距中位數 {median:.2%}、差距 < 2% 的占 {within:.1%}'
               '（金融業「收益」定義與月營收不同、少數公司月營收非合併數，是主要差異來源）')
+    else:
+        skip('月營收 3 個月合計 vs 季報單季營收', '沒有同時具備月營收與季報的公司季度')
     # 3) Trailing EPS implied by the official P/E vs the sum of four reported quarters.
     gaps = []
     for symbol, (index, recs) in store.get('valuation', {}).items():
@@ -386,6 +388,8 @@ def check_fundamentals(panel, cache):
         check('本益比推算 EPS vs 季報近 4 季 EPS', median < 0.05,
               f'{len(gaps):,} 筆月底資料，差距中位數 {median:.2%}、差距 < 5% 的占 {within:.1%}'
               '（證交所在公司申報當天就更新 EPS，本專案保守地等到法定期限，財報季前後會有落差）')
+    else:
+        skip('本益比推算 EPS vs 季報近 4 季 EPS', '沒有同時具備本益比與 4 季財報的資料')
     # 4) Per-stock TWSE margin balances add up to the published market total.
     compared = bad = 0
     for path in sorted((Path(cache) / 'twse_margin').glob('*/*.json')):
