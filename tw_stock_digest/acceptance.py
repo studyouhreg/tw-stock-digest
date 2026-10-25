@@ -9,6 +9,7 @@ import argparse
 import csv
 import datetime as dt
 import json
+import os
 from pathlib import Path
 import statistics
 import sys
@@ -138,10 +139,12 @@ def check_finmind(panel, cache):
         path = folder / f'{symbol}_{start}_{end}.json'
         if not path.exists():
             folder.mkdir(parents=True, exist_ok=True)
+            token = os.getenv('FINMIND_TOKEN', '').strip()
+            headers = {**HEADERS, **({'Authorization': f'Bearer {token}'} if token else {})}
             try:
-                data = http.json('GET', FINMIND.format(symbol, start, end), headers=HEADERS)
+                data = http.json('GET', FINMIND.format(symbol, start, end), headers=headers)
             except RemoteError as error:
-                skip('與 FinMind 抽樣比對 OHLCV', f'FinMind 拒絕請求（{error}，免費額度每小時重置）；已快取的檔案保留，稍後重跑即可')
+                skip('與 FinMind 抽樣比對 OHLCV', f'FinMind 拒絕請求（{error}，未登入的免費額度已用完）；可申請免費帳號並設定環境變數 FINMIND_TOKEN 後重跑')
                 return
             path.write_text(json.dumps(data))
             time.sleep(2)
@@ -162,6 +165,65 @@ def check_finmind(panel, cache):
     check('與 FinMind 抽樣比對 OHLCV', compared > 1000 and mismatched / max(compared, 1) < 0.001,
           f'{len(SAMPLE)} 檔、{compared:,} 筆股票日資料，不一致 {mismatched} 筆' +
           (f'；例：{"; ".join(examples)}' if examples else ''))
+
+
+STOCK_MONTH = {
+    'TWSE': ('https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?date={d:%Y%m}01&stockNo={s}&response=json',
+             ['2330', '2317', '2454', '1101', '2881', '0050', '0056']),
+    'TPEX': ('https://www.tpex.org.tw/www/zh-tw/afterTrading/tradingStock?code={s}&date={d:%Y}%2F{d:%m}%2F01&response=json',
+             ['6488', '5483', '8069', '3105']),
+}
+CHECK_MONTHS = [dt.date(2023, 11, 1), dt.date(2024, 6, 1), dt.date(2024, 12, 1),
+                dt.date(2025, 6, 1), dt.date(2025, 12, 1), dt.date(2026, 9, 1)]
+
+
+def check_stock_month(panel, cache):
+    """Cross-check the all-market daily report against the per-stock monthly report.
+
+    They are separate official reports, so a column-mapping or parsing error in
+    one shows up as a mismatch. TPEx's per-stock page reports volume in lots.
+    """
+    from .history import Throttle, fetch_json, save
+    from .panel import num, roc_date
+    folder = Path(cache).parent / 'crosscheck'
+    http, throttles = HttpClient(timeout=60), {m: Throttle(2.5, ceiling=2.5) for m in STOCK_MONTH}
+    compared = mismatched = 0
+    examples, tpex_gaps = [], []
+    for market, (template, symbols) in STOCK_MONTH.items():
+        for symbol in symbols:
+            for month in CHECK_MONTHS:
+                path = folder / market / f'{symbol}_{month:%Y%m}.json'
+                if not path.exists():
+                    try:
+                        save(path, fetch_json(http, template.format(d=month, s=symbol), throttles[market]))
+                    except RemoteError:
+                        continue
+                data = json.loads(path.read_text(encoding='utf-8'))
+                rows = data.get('data') if market == 'TWSE' else (data.get('tables') or [{}])[0].get('data')
+                for row in rows or []:
+                    i = panel.index.get(roc_date(row[0]))
+                    if i is None:
+                        continue
+                    o, h, l, c = (num(x) for x in row[3:7])
+                    volume = num(row[1])
+                    ours = [panel.data[f][symbol][i] for f in ('open', 'high', 'low', 'close')]
+                    if c is None and ours[3] is None:
+                        continue
+                    our_volume = panel.data['volume'][symbol][i] or 0
+                    if market == 'TPEX':
+                        our_volume = round(our_volume / 1000)
+                    compared += 1
+                    if market == 'TPEX' and volume and our_volume:
+                        tpex_gaps.append(volume / our_volume - 1)
+                    if [o, h, l, c] != ours or (market == 'TWSE' and volume != our_volume):
+                        mismatched += 1
+                        if len(examples) < 4:
+                            examples.append(f'{symbol}@{roc_date(row[0])} 個股={[o, h, l, c, volume]} 全市場={ours + [our_volume]}')
+    gap = statistics.median(tpex_gaps) if tpex_gaps else 0.0
+    check('全市場日報 vs 個股月報', compared > 500 and mismatched == 0,
+          f'{sum(len(v[1]) for v in STOCK_MONTH.values())} 檔 × {len(CHECK_MONTHS)} 個月、{compared:,} 筆股票日資料；'
+          f'開高低收（上市另含成交股數）不一致 {mismatched} 筆' + (f'，例：{"; ".join(examples)}' if examples else '') +
+          f'。上櫃個股月報的成交量含鉅額與零股，中位數多 {gap:+.1%}，屬定義差異')
 
 
 def check_snapshot(panel, data_dir):
@@ -326,6 +388,14 @@ def report(results, checks, panel, out):
             f"{m['volatility']:.1%} | {m['sharpe']:.2f} | {m['max_drawdown']:.1%} | {pct(m['excess_annual'])} | "
             f"{m['excess_t']:.2f} | {pct(m['vs_taiex_tr'])} | {pct(m['halves_excess'][0])}／{pct(m['halves_excess'][1])} | "
             f"{m['turnover_per_year']:.1f}× | {sign[m['expected']]} | {sign[m['observed']]} {agree} |")
+    lines += ['', '## 三、限制', '',
+              '- **期間短且偏多頭**：策略回測約兩年（法人策略約 20 個月），期間大型權值股主導漲勢，'
+              '加權報酬指數年化遠高於等權股票，任何從 20 檔等權中小型股出發的策略都很難勝過它。結論不能外推到空頭或盤整市況。',
+              '- **統計檢定力低**：兩年資料的 t 值門檻很難達到，「不顯著」多半代表證據不足，不代表策略無效。',
+              '- **日換股策略的超額報酬**是每日超額報酬的算術平均 × 250，成本極高時會出現低於 −100% 的數字，請以年化報酬比較。',
+              '- **成本以未打折手續費計算**：實際券商折扣會讓高週轉策略（短期反轉、盤後篩選）表現好一些，但不足以翻正。',
+              '- **未模擬**：分盤交易、處置股、借券放空（全部策略只做多）、股利入帳延遲、滑價與市場衝擊。',
+              '- **參數未最佳化**：照文獻常用值固定，避免資料探勘；同一組結果不應再拿來挑參數。']
     out.mkdir(parents=True, exist_ok=True)
     (out / 'acceptance.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
@@ -343,6 +413,7 @@ def main(argv=None):
     check_references(panel)
     check_limits(panel)
     check_total_return(panel)
+    check_stock_month(panel, args.cache)
     if not args.no_finmind:
         check_finmind(panel, args.cache)
     check_snapshot(panel, args.data)
@@ -391,7 +462,9 @@ def write_benchmarks(path, benchmarks):
             if m:
                 lines.append(f"| {window} | {labels[key]} | {pct(m['cagr'])} | {m['volatility']:.1%} | "
                              f"{m['sharpe']:.2f} | {m['max_drawdown']:.1%} |")
-    path.write_text(text + '\n' + '\n'.join(lines) + '\n', encoding='utf-8')
+    head, marker, tail = text.partition('\n## 三、限制')
+    path.write_text(head.rstrip() + '\n' + '\n'.join(lines) + '\n\n' + marker.lstrip('\n') + tail + '\n',
+                    encoding='utf-8')
 
 
 if __name__ == '__main__':
