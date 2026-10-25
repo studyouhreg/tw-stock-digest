@@ -148,3 +148,16 @@ class FundamentalStrategyTests(unittest.TestCase):
         from tw_stock_digest.market import normalize
         with self.assertRaisesRegex(ValueError, 'needs history'):
             screen_snapshot(normalize('TWSE', [twse()]), ['revenue_yoy'])
+
+
+class PlaceboTests(unittest.TestCase):
+    def test_random_placebo_is_reproducible_and_centered(self):
+        from tw_stock_digest import acceptance, backtest
+        bars = {f'{1000 + k}': steady(80, step=0.001 * (k % 5 - 2)) for k in range(40)}
+        panel = make_panel(bars, 80)
+        bench = backtest.benchmark_equal_weight(panel, 0, 79)
+        a = acceptance.placebo(panel, 0, 79, bench, seeds=6)
+        b = acceptance.placebo(panel, 0, 79, bench, seeds=6)
+        self.assertEqual(a['values'], b['values'])
+        self.assertEqual(len(a['values']), 6)
+        self.assertLess(abs(a['mean']), 0.5)

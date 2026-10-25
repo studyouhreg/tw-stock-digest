@@ -8,6 +8,7 @@ with the direction the literature (docs/strategies/research.md) leads us to expe
 import argparse
 import csv
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -418,6 +419,7 @@ def evaluate(panel, name, start, end, bench_ew, bench_tr):
     m = backtest.metrics(net.equity, bench_ew)
     m['vs_taiex_tr'] = backtest.metrics(net.equity, bench_tr)['excess_annual'] if bench_tr else None
     m['gross_cagr'] = backtest.metrics(gross.equity)['cagr']
+    m['gross_excess'] = backtest.metrics(gross.equity, bench_ew)['excess_annual']
     m['turnover_per_year'] = net.turnover / years
     m['avg_holdings'] = statistics.fmean(net.holdings[1:])
     m['skipped_buys'] = net.skipped_buys
@@ -430,8 +432,7 @@ def evaluate(panel, name, start, end, bench_ew, bench_tr):
     m['latest_picks'] = {'date': last, 'symbols': [(s, panel.names.get(s, '')) for s in net.picks.get(last, [])[:10]]}
     m['seconds'] = round(time.time() - began, 1)
     expected, reason = EXPECTED.get(name, (0, ''))
-    observed = 1 if m['excess_t'] > 2 else -1 if m['excess_t'] < -2 else 0
-    m['expected'], m['observed'], m['reason'] = expected, observed, reason
+    m['expected'], m['reason'] = expected, reason
     m['window'] = [panel.dates[start].isoformat(), panel.dates[end].isoformat()]
     m['label'], m['rebalance'] = strategy.label, strategy.rebalance
     return m
@@ -444,6 +445,33 @@ def facts_start(panel, strategy):
         if i >= 20 and len(strategy.select(strategies.MarketView(panel, i))) >= strategy.top_n:
             return i
     return None
+
+
+class RandomPicks(strategies.Strategy):
+    """Placebo: 20 liquid stocks chosen at random each period (no skill, same costs)."""
+    name, label, description = 'random_placebo', '隨機選股', '每期從同一股票範圍隨機選 20 檔'
+
+    def __init__(self, seed, rebalance='monthly', **kw):
+        super().__init__(**kw)
+        self.seed, self.rebalance = seed, rebalance
+
+    def score(self, view, symbol):
+        digest = hashlib.sha256(f'{self.seed}|{view.date}|{symbol}'.encode()).digest()
+        return int.from_bytes(digest[:8], 'big')
+
+
+def placebo(panel, start, end, bench, *, seeds=30, rebalance='monthly'):
+    """Before-cost excess-return distribution of random 20-stock portfolios.
+
+    Compared before costs so the test is about the selection signal alone: a
+    random portfolio replaces nearly every name each period, so after costs it
+    would flatter any strategy that simply trades less.
+    """
+    free = backtest.Costs(0, 0)
+    values = sorted(backtest.metrics(backtest.run(panel, RandomPicks(seed, rebalance), start=start, end=end,
+                                                  costs=free).equity, bench)['excess_annual'] for seed in range(seeds))
+    return dict(rebalance=rebalance, seeds=seeds, mean=statistics.fmean(values),
+                p05=values[int(0.05 * seeds)], p95=values[int(0.95 * seeds) - 1], values=values)
 
 
 def tr_index(panel, start, end):
@@ -469,26 +497,34 @@ def report(results, checks, panel, out):
         lines.append(f"| {c['name']} | {mark} | {c['detail']} |")
     lines += ['', '## 二、策略回測', '',
               '扣除手續費 0.1425%（買賣各一次）與證交稅 0.3%；訊號用當日收盤、隔日開盤成交；每期等權 20 檔。'
-              '超額報酬以同範圍、同期間的等權組合為基準，t 值未做自我相關調整，|t| > 2 才視為有方向。'
+              '超額報酬以同範圍、同期間的等權組合為基準（未扣成本），t 值未做自我相關調整。'
+              '**判斷選股訊號用「隨機百分位」**：同期間、同換股頻率的 30 組隨機 20 檔組合中，'
+              '有多少比例的**未扣成本**超額報酬低於該策略（未扣成本才不會因為換股較少而占便宜）；'
+              '≥ 95% 視為優於隨機，≤ 5% 視為劣於隨機。訊號好不代表扣成本後能賺錢，請同時看年化報酬。'
               '價格策略需先累積一年歷史，基本面策略從資料足以選滿 20 檔的第一個月底開始，所以期間不同；'
               '各期間的基準報酬列在下方。', '',
-              '| 策略 | 換股 | 年化報酬 | 未扣成本 | 年化波動 | Sharpe | 最大回撤 | 超額（等權） | t 值 | 超額（加權報酬指數） | 前半／後半超額 | 年週轉 | 文獻預期 | 觀察 |',
-              '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|']
+              '| 策略 | 換股 | 年化報酬 | 未扣成本 | 年化波動 | Sharpe | 最大回撤 | 超額（等權） | t 值 | 超額（加權報酬指數） | 前半／後半超額 | 年週轉 | 隨機百分位 | 文獻預期 | 對照隨機 |',
+              '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---|---|']
     sign = {1: '正', -1: '負', 0: '不顯著'}
+    versus = {1: '優於隨機', -1: '劣於隨機', 0: '與隨機無異'}
     for name, m in results.items():
         if 'error' in m:
-            lines.append(f"| {name} | — | 無法執行：{m['error']} |" + ' |' * 11)
+            lines.append(f"| {name} | — | 無法執行：{m['error']} |" + ' |' * 12)
             continue
         agree = '✔' if m['expected'] == m['observed'] else '✘'
         lines.append(
             f"| {m['label']}<br>`{name}`<br>{m['window'][0]} 起 | {m['rebalance']} | {pct(m['cagr'])} | {pct(m['gross_cagr'])} | "
             f"{m['volatility']:.1%} | {m['sharpe']:.2f} | {m['max_drawdown']:.1%} | {pct(m['excess_annual'])} | "
             f"{m['excess_t']:.2f} | {pct(m['vs_taiex_tr'])} | {pct(m['halves_excess'][0])}／{pct(m['halves_excess'][1])} | "
-            f"{m['turnover_per_year']:.1f}× | {sign[m['expected']]} | {sign[m['observed']]} {agree} |")
+            f"{m['turnover_per_year']:.1f}× | {m['random_percentile']:.0%} | {sign[m['expected']]} | "
+            f"{versus[m['observed']]} {agree} |")
     lines += ['', '## 三、限制', '',
-              '- **期間短且偏多頭**：策略回測約兩年（法人策略約 20 個月），期間大型權值股主導漲勢，'
+              '- **期間短且偏多頭**：價格策略回測約兩年、法人策略約 20 個月、基本面策略約三年，期間大型權值股主導漲勢，'
               '加權報酬指數年化遠高於等權股票，任何從 20 檔等權中小型股出發的策略都很難勝過它。結論不能外推到空頭或盤整市況。',
-              '- **統計檢定力低**：兩年資料的 t 值門檻很難達到，「不顯著」多半代表證據不足，不代表策略無效。',
+              '- **統計檢定力低**：兩到三年資料，「與隨機無異」多半代表證據不足，不代表策略無效。'
+              '隨機基準只有 30 組，百分位的精確度約 ±5 個百分點。',
+              '- **EPS 類指標受業外收益干擾**：臺股小型股常因處分利益或投資損益使單季 EPS 暴增，'
+              '低本益比與 EPS 年增選出的股票多屬此類；改用營業利益是可能的修正方向。',
               '- **日換股策略的超額報酬**是每日超額報酬的算術平均 × 250，成本極高時會出現低於 −100% 的數字，請以年化報酬比較。',
               '- **成本以未打折手續費計算**：實際券商折扣會讓高週轉策略（短期反轉、盤後篩選）表現好一些，但不足以翻正。',
               '- **未模擬**：分盤交易、處置股、借券放空（全部策略只做多）、股利入帳延遲、滑價與市場衝擊。',
@@ -539,6 +575,19 @@ def main(argv=None):
         results[name] = evaluate(panel, name, start, end, ew, tr)
         print(f"{name}: cagr={results[name]['cagr']:+.2%} excess={results[name]['excess_annual']:+.2%} "
               f"t={results[name]['excess_t']:.2f} ({results[name]['seconds']}s)", flush=True)
+    # Placebo: random portfolios with the same window, frequency and costs.
+    placebos = {}
+    for name, m in results.items():
+        if 'error' in m:
+            continue
+        start = panel.index[dt.date.fromisoformat(m['window'][0])]
+        key = (start, m['rebalance'])
+        if key not in placebos:
+            placebos[key] = placebo(panel, start, end, windows[start][0], rebalance=m['rebalance'])
+            print(f"placebo {panel.dates[start]} {m['rebalance']}: mean={placebos[key]['mean']:+.2%}", flush=True)
+        values = placebos[key]['values']
+        m['random_percentile'] = sum(v < m['gross_excess'] for v in values) / len(values)
+        m['observed'] = 1 if m['random_percentile'] >= 0.95 else -1 if m['random_percentile'] <= 0.05 else 0
     benchmarks = {}
     for start, (ew, tr) in windows.items():
         key = f'{panel.dates[start]}～{panel.dates[end]}'
@@ -547,15 +596,16 @@ def main(argv=None):
                                etf_0050=backtest.metrics(backtest.benchmark_symbol(panel, '0050', start, end)))
     payload = dict(generated_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
                    period=[panel.dates[0].isoformat(), panel.dates[-1].isoformat()],
-                   checks=CHECKS, strategies=results, benchmarks=benchmarks)
+                   checks=CHECKS, strategies=results, benchmarks=benchmarks,
+                   placebos={f'{panel.dates[k[0]]}|{k[1]}': v for k, v in placebos.items()})
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / 'acceptance.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     report(results, CHECKS, panel, args.out)
-    write_benchmarks(args.out / 'acceptance.md', benchmarks)
+    write_benchmarks(args.out / 'acceptance.md', benchmarks, payload['placebos'])
     return 0 if all(c['passed'] is not False for c in CHECKS) else 1
 
 
-def write_benchmarks(path, benchmarks):
+def write_benchmarks(path, benchmarks, placebos=None):
     text = path.read_text(encoding='utf-8').rstrip()
     lines = ['', '### 基準', '', '| 期間 | 基準 | 年化報酬 | 年化波動 | Sharpe | 最大回撤 |', '|---|---|---:|---:|---:|---:|']
     labels = dict(equal_weight='等權股票（未扣成本）', taiex_tr='發行量加權股價報酬指數', etf_0050='元大台灣50（0050）含息')
@@ -564,6 +614,12 @@ def write_benchmarks(path, benchmarks):
             if m:
                 lines.append(f"| {window} | {labels[key]} | {pct(m['cagr'])} | {m['volatility']:.1%} | "
                              f"{m['sharpe']:.2f} | {m['max_drawdown']:.1%} |")
+    if placebos:
+        lines += ['', '### 隨機選股基準（30 組，未扣成本）', '', '| 期間起點 | 換股 | 平均超額 | 5 百分位 | 95 百分位 |',
+                  '|---|---|---:|---:|---:|']
+        for key, v in placebos.items():
+            day, rebalance = key.split('|')
+            lines.append(f"| {day} | {rebalance} | {pct(v['mean'])} | {pct(v['p05'])} | {pct(v['p95'])} |")
     head, marker, tail = text.partition('\n## 三、限制')
     path.write_text(head.rstrip() + '\n' + '\n'.join(lines) + '\n\n' + marker.lstrip('\n') + tail + '\n',
                     encoding='utf-8')
