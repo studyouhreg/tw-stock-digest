@@ -140,7 +140,8 @@ def download(cache, start, end, datasets, *, interval=2.5, http=None, log=print,
     failures = []
 
     def worker(host, items):
-        throttle = Throttle(interval)
+        # TWSE blocks at random, not by rate, so slowing down only loses time.
+        throttle = Throttle(interval, ceiling=interval)
         log(f'[{host}] {len(items)} requests queued')
         for index, (path, url, complete) in enumerate(items, 1):
             try:
