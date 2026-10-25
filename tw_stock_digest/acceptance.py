@@ -8,6 +8,7 @@ with the direction the literature (docs/strategies/research.md) leads us to expe
 import argparse
 import csv
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -18,7 +19,8 @@ import time
 from . import backtest, strategies
 from .history import HEADERS
 from .http import HttpClient, RemoteError
-from .panel import build, screen_snapshot
+from .panel import build, num, screen_snapshot
+from .fundamentals import attach
 
 FINMIND = 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id={}&start_date={}&end_date={}'
 SAMPLE = ['2330', '2317', '2454', '1101', '2881', '3008', '0050', '0056', '6488', '5483', '8069', '3105']
@@ -37,6 +39,18 @@ EXPECTED = {
     'close_at_high': (1, '盤中強勢延續'),
     'gap_up': (0, '隔夜報酬短期延續、長期反轉'),
     'turnover_leaders': (0, '無明確方向'),
+    'revenue_yoy': (1, '未預期月營收預測報酬為正（陳柔君等 2022）'),
+    'revenue_3m_yoy': (1, '同上，較平滑的版本'),
+    'revenue_surprise': (1, 'SURGE 有獨立的正向解釋力'),
+    'low_pe': (1, 'E/P 是臺股較佳的價值指標（Hsu 等 2015）'),
+    'low_pb': (0, '淨值比效果較弱'),
+    'high_dividend_yield': (1, 'D/P 是臺股較佳的價值指標'),
+    'margin_surge': (-1, '散戶融資買進推高價格、之後報酬較低（Ting 等 2018）'),
+    'margin_retreat': (0, '反向推論，未直接檢驗'),
+    'short_interest': (1, '散戶融券壓低價格、之後報酬較高'),
+    'roe': (1, '獲利能力因子在國際上普遍有效'),
+    'gross_profitability': (1, '毛利資產比是最穩健的獲利因子（Hanauer、Huber 2018）'),
+    'eps_growth': (1, '盈餘驚喜後價格漂移'),
 }
 CHECKS = []
 
@@ -261,7 +275,7 @@ def check_snapshot(panel, data_dir):
                 if q['market'] == 'TPEX' and q['volume_shares'] and hist:
                     volume_gaps.append(q['volume_shares'] / hist - 1)
         names = [n for n, c in strategies.REGISTRY.items()
-                 if c.lookback == 1 and not c.needs_flows and n != 'turnover_leaders']
+                 if issubclass(c, strategies.Screen) and n != 'turnover_leaders']
         snap = screen_snapshot(quotes, names, min_turnover=0)
         view = strategies.MarketView(panel, i)
         same = all([p.symbol for p in snap[n]] == [p.symbol for p in strategies.get(n, min_turnover=0).select(view)]
@@ -321,6 +335,79 @@ def check_engine(panel, start):
         f'（最大差 {worst:.1%}；手算不把續抱股票調回等權，故有小差距）')
 
 
+def check_fundamentals(panel, cache):
+    """Internal consistency of the point-in-time fundamentals."""
+    facts = getattr(panel, 'facts', None)
+    if facts is None or not facts.data:
+        skip('基本面資料', '沒有快取的基本面資料')
+        return
+    store = facts.data
+    # 1) Our YoY from the two published amounts must equal the published YoY %.
+    compared = bad = 0
+    for symbol, (_, recs) in store.get('revenue', {}).items():
+        for r in recs:
+            if r['last_year'] and r['last_year'] > 0 and r.get('published_yoy') is not None:
+                compared += 1
+                bad += abs(100 * (r['revenue'] / r['last_year'] - 1) - r['published_yoy']) > 0.011
+    check('月營收：自算年增率 vs 官方年增率', compared > 10000 and bad / compared < 0.001,
+          f'{compared:,} 筆、差超過 0.01 個百分點 {bad} 筆')
+    # 2) Three monthly revenues should add up to the quarter's statement revenue.
+    gaps = []
+    for symbol, (_, recs) in store.get('statement', {}).items():
+        months = {r['period']: r['revenue'] for r in store.get('revenue', {}).get(symbol, ([], []))[1]}
+        for r in recs:
+            (year, q), quarter = r['period'], r.get('q_revenue')
+            parts = [months.get((year, m)) for m in range(3 * q - 2, 3 * q + 1)]
+            if quarter and quarter > 0 and all(x is not None for x in parts):
+                gaps.append(abs(sum(parts) / quarter - 1))
+    if gaps:
+        gaps.sort()
+        median, within = gaps[len(gaps) // 2], sum(g < 0.02 for g in gaps) / len(gaps)
+        check('月營收 3 個月合計 vs 季報單季營收', median < 0.01,
+              f'{len(gaps):,} 個公司季度，差距中位數 {median:.2%}、差距 < 2% 的占 {within:.1%}'
+              '（金融業「收益」定義與月營收不同、少數公司月營收非合併數，是主要差異來源）')
+    else:
+        skip('月營收 3 個月合計 vs 季報單季營收', '沒有同時具備月營收與季報的公司季度')
+    # 3) Trailing EPS implied by the official P/E vs the sum of four reported quarters.
+    gaps = []
+    for symbol, (index, recs) in store.get('valuation', {}).items():
+        statements = store.get('statement', {}).get(symbol)
+        if not statements:
+            continue
+        for i, r in zip(index, recs):
+            close = panel.data['close'].get(symbol, [None] * len(panel.dates))[i]
+            if not (r['pe'] and r['pe'] > 0 and close):
+                continue
+            known = facts.latest('statement', symbol, i, 4)
+            if len(known) == 4 and all(k['q_eps'] is not None for k in known):
+                ttm = sum(k['q_eps'] for k in known)
+                if ttm > 0:
+                    gaps.append(abs(close / r['pe'] / ttm - 1))
+    if gaps:
+        gaps.sort()
+        median, within = gaps[len(gaps) // 2], sum(g < 0.05 for g in gaps) / len(gaps)
+        check('本益比推算 EPS vs 季報近 4 季 EPS', median < 0.05,
+              f'{len(gaps):,} 筆月底資料，差距中位數 {median:.2%}、差距 < 5% 的占 {within:.1%}'
+              '（證交所在公司申報當天就更新 EPS，本專案保守地等到法定期限，財報季前後會有落差）')
+    else:
+        skip('本益比推算 EPS vs 季報近 4 季 EPS', '沒有同時具備本益比與 4 季財報的資料')
+    # 4) Per-stock TWSE margin balances add up to the published market total.
+    compared = bad = 0
+    for path in sorted((Path(cache) / 'twse_margin').glob('*/*.json')):
+        data = json.loads(path.read_text(encoding='utf-8'))
+        tables = data.get('tables') or []
+        summary = next((t for t in tables if '信用交易統計' in (t.get('title') or '')), None)
+        detail = next((t for t in tables if '彙總' in (t.get('title') or '')), None)
+        if not summary or not detail:
+            continue
+        total = next((num(r[5]) for r in summary['data'] if r[0].startswith('融資(交易單位)')), None)
+        parts = sum(num(r[6]) or 0 for r in detail['data'])
+        compared += 1
+        bad += total is None or abs(parts - total) > 0.5
+    check('上市個股融資餘額合計 vs 全市場統計', compared > 50 and bad == 0,
+          f'{compared} 個週末交易日、不一致 {bad} 個')
+
+
 # --- strategy runs -------------------------------------------------------------
 
 def evaluate(panel, name, start, end, bench_ew, bench_tr):
@@ -332,6 +419,7 @@ def evaluate(panel, name, start, end, bench_ew, bench_tr):
     m = backtest.metrics(net.equity, bench_ew)
     m['vs_taiex_tr'] = backtest.metrics(net.equity, bench_tr)['excess_annual'] if bench_tr else None
     m['gross_cagr'] = backtest.metrics(gross.equity)['cagr']
+    m['gross_excess'] = backtest.metrics(gross.equity, bench_ew)['excess_annual']
     m['turnover_per_year'] = net.turnover / years
     m['avg_holdings'] = statistics.fmean(net.holdings[1:])
     m['skipped_buys'] = net.skipped_buys
@@ -344,11 +432,46 @@ def evaluate(panel, name, start, end, bench_ew, bench_tr):
     m['latest_picks'] = {'date': last, 'symbols': [(s, panel.names.get(s, '')) for s in net.picks.get(last, [])[:10]]}
     m['seconds'] = round(time.time() - began, 1)
     expected, reason = EXPECTED.get(name, (0, ''))
-    observed = 1 if m['excess_t'] > 2 else -1 if m['excess_t'] < -2 else 0
-    m['expected'], m['observed'], m['reason'] = expected, observed, reason
+    m['expected'], m['reason'] = expected, reason
     m['window'] = [panel.dates[start].isoformat(), panel.dates[end].isoformat()]
     m['label'], m['rebalance'] = strategy.label, strategy.rebalance
     return m
+
+
+def facts_start(panel, strategy):
+    """First month-end on which the strategy can fill its whole portfolio."""
+    ends = sorted(backtest.rebalance_days(panel.dates, 'monthly'))
+    for i in ends:
+        if i >= 20 and len(strategy.select(strategies.MarketView(panel, i))) >= strategy.top_n:
+            return i
+    return None
+
+
+class RandomPicks(strategies.Strategy):
+    """Placebo: 20 liquid stocks chosen at random each period (no skill, same costs)."""
+    name, label, description = 'random_placebo', '隨機選股', '每期從同一股票範圍隨機選 20 檔'
+
+    def __init__(self, seed, rebalance='monthly', **kw):
+        super().__init__(**kw)
+        self.seed, self.rebalance = seed, rebalance
+
+    def score(self, view, symbol):
+        digest = hashlib.sha256(f'{self.seed}|{view.date}|{symbol}'.encode()).digest()
+        return int.from_bytes(digest[:8], 'big')
+
+
+def placebo(panel, start, end, bench, *, seeds=30, rebalance='monthly'):
+    """Before-cost excess-return distribution of random 20-stock portfolios.
+
+    Compared before costs so the test is about the selection signal alone: a
+    random portfolio replaces nearly every name each period, so after costs it
+    would flatter any strategy that simply trades less.
+    """
+    free = backtest.Costs(0, 0)
+    values = sorted(backtest.metrics(backtest.run(panel, RandomPicks(seed, rebalance), start=start, end=end,
+                                                  costs=free).equity, bench)['excess_annual'] for seed in range(seeds))
+    return dict(rebalance=rebalance, seeds=seeds, mean=statistics.fmean(values),
+                p05=values[int(0.05 * seeds)], p95=values[int(0.95 * seeds) - 1], values=values)
 
 
 def tr_index(panel, start, end):
@@ -374,24 +497,34 @@ def report(results, checks, panel, out):
         lines.append(f"| {c['name']} | {mark} | {c['detail']} |")
     lines += ['', '## 二、策略回測', '',
               '扣除手續費 0.1425%（買賣各一次）與證交稅 0.3%；訊號用當日收盤、隔日開盤成交；每期等權 20 檔。'
-              '超額報酬以同範圍等權組合為基準，t 值未做自我相關調整，|t| > 2 才視為有方向。', '',
-              '| 策略 | 換股 | 年化報酬 | 未扣成本 | 年化波動 | Sharpe | 最大回撤 | 超額（等權） | t 值 | 超額（加權報酬指數） | 前半／後半超額 | 年週轉 | 文獻預期 | 觀察 |',
-              '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---|---|']
+              '超額報酬以同範圍、同期間的等權組合為基準（未扣成本），t 值未做自我相關調整。'
+              '**判斷選股訊號用「隨機百分位」**：同期間、同換股頻率的 30 組隨機 20 檔組合中，'
+              '有多少比例的**未扣成本**超額報酬低於該策略（未扣成本才不會因為換股較少而占便宜）；'
+              '≥ 95% 視為優於隨機，≤ 5% 視為劣於隨機。訊號好不代表扣成本後能賺錢，請同時看年化報酬。'
+              '價格策略需先累積一年歷史，基本面策略從資料足以選滿 20 檔的第一個月底開始，所以期間不同；'
+              '各期間的基準報酬列在下方。', '',
+              '| 策略 | 換股 | 年化報酬 | 未扣成本 | 年化波動 | Sharpe | 最大回撤 | 超額（等權） | t 值 | 超額（加權報酬指數） | 前半／後半超額 | 年週轉 | 隨機百分位 | 文獻預期 | 對照隨機 |',
+              '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---|---|']
     sign = {1: '正', -1: '負', 0: '不顯著'}
+    versus = {1: '優於隨機', -1: '劣於隨機', 0: '與隨機無異'}
     for name, m in results.items():
         if 'error' in m:
-            lines.append(f"| {name} | — | 無法執行：{m['error']} |" + ' |' * 11)
+            lines.append(f"| {name} | — | 無法執行：{m['error']} |" + ' |' * 12)
             continue
         agree = '✔' if m['expected'] == m['observed'] else '✘'
         lines.append(
-            f"| {m['label']}<br>`{name}` | {m['rebalance']} | {pct(m['cagr'])} | {pct(m['gross_cagr'])} | "
+            f"| {m['label']}<br>`{name}`<br>{m['window'][0]} 起 | {m['rebalance']} | {pct(m['cagr'])} | {pct(m['gross_cagr'])} | "
             f"{m['volatility']:.1%} | {m['sharpe']:.2f} | {m['max_drawdown']:.1%} | {pct(m['excess_annual'])} | "
             f"{m['excess_t']:.2f} | {pct(m['vs_taiex_tr'])} | {pct(m['halves_excess'][0])}／{pct(m['halves_excess'][1])} | "
-            f"{m['turnover_per_year']:.1f}× | {sign[m['expected']]} | {sign[m['observed']]} {agree} |")
+            f"{m['turnover_per_year']:.1f}× | {m['random_percentile']:.0%} | {sign[m['expected']]} | "
+            f"{versus[m['observed']]} {agree} |")
     lines += ['', '## 三、限制', '',
-              '- **期間短且偏多頭**：策略回測約兩年（法人策略約 20 個月），期間大型權值股主導漲勢，'
+              '- **期間短且偏多頭**：價格策略回測約兩年、法人策略約 20 個月、基本面策略約三年，期間大型權值股主導漲勢，'
               '加權報酬指數年化遠高於等權股票，任何從 20 檔等權中小型股出發的策略都很難勝過它。結論不能外推到空頭或盤整市況。',
-              '- **統計檢定力低**：兩年資料的 t 值門檻很難達到，「不顯著」多半代表證據不足，不代表策略無效。',
+              '- **統計檢定力低**：兩到三年資料，「與隨機無異」多半代表證據不足，不代表策略無效。'
+              '隨機基準只有 30 組，百分位的精確度約 ±5 個百分點。',
+              '- **EPS 類指標受業外收益干擾**：臺股小型股常因處分利益或投資損益使單季 EPS 暴增，'
+              '低本益比與 EPS 年增選出的股票多屬此類；改用營業利益是可能的修正方向。',
               '- **日換股策略的超額報酬**是每日超額報酬的算術平均 × 250，成本極高時會出現低於 −100% 的數字，請以年化報酬比較。',
               '- **成本以未打折手續費計算**：實際券商折扣會讓高週轉策略（短期反轉、盤後篩選）表現好一些，但不足以翻正。',
               '- **未模擬**：分盤交易、處置股、借券放空（全部策略只做多）、股利入帳延遲、滑價與市場衝擊。',
@@ -409,6 +542,7 @@ def main(argv=None):
     parser.add_argument('--no-finmind', action='store_true')
     args = parser.parse_args(argv)
     panel = build(args.cache, log=print)
+    attach(panel, args.cache, log=print)
     check_coverage(panel)
     check_references(panel)
     check_limits(panel)
@@ -417,6 +551,7 @@ def main(argv=None):
     if not args.no_finmind:
         check_finmind(panel, args.cache)
     check_snapshot(panel, args.data)
+    check_fundamentals(panel, args.cache)
 
     end = len(panel.dates) - 1
     price_start = 250  # one year of history before the first decision
@@ -427,7 +562,10 @@ def main(argv=None):
     results = {}
     for name in [n.strip() for n in args.strategies.split(',') if n.strip()]:
         cls = strategies.REGISTRY[name]
-        start = flow_start if cls.needs_flows else price_start
+        if cls.needs_facts:
+            start = facts_start(panel, cls())
+        else:
+            start = flow_start if cls.needs_flows else price_start
         if start is None or start >= end:
             results[name] = dict(error='資料不足')
             continue
@@ -437,6 +575,19 @@ def main(argv=None):
         results[name] = evaluate(panel, name, start, end, ew, tr)
         print(f"{name}: cagr={results[name]['cagr']:+.2%} excess={results[name]['excess_annual']:+.2%} "
               f"t={results[name]['excess_t']:.2f} ({results[name]['seconds']}s)", flush=True)
+    # Placebo: random portfolios with the same window, frequency and costs.
+    placebos = {}
+    for name, m in results.items():
+        if 'error' in m:
+            continue
+        start = panel.index[dt.date.fromisoformat(m['window'][0])]
+        key = (start, m['rebalance'])
+        if key not in placebos:
+            placebos[key] = placebo(panel, start, end, windows[start][0], rebalance=m['rebalance'])
+            print(f"placebo {panel.dates[start]} {m['rebalance']}: mean={placebos[key]['mean']:+.2%}", flush=True)
+        values = placebos[key]['values']
+        m['random_percentile'] = sum(v < m['gross_excess'] for v in values) / len(values)
+        m['observed'] = 1 if m['random_percentile'] >= 0.95 else -1 if m['random_percentile'] <= 0.05 else 0
     benchmarks = {}
     for start, (ew, tr) in windows.items():
         key = f'{panel.dates[start]}～{panel.dates[end]}'
@@ -445,15 +596,16 @@ def main(argv=None):
                                etf_0050=backtest.metrics(backtest.benchmark_symbol(panel, '0050', start, end)))
     payload = dict(generated_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
                    period=[panel.dates[0].isoformat(), panel.dates[-1].isoformat()],
-                   checks=CHECKS, strategies=results, benchmarks=benchmarks)
+                   checks=CHECKS, strategies=results, benchmarks=benchmarks,
+                   placebos={f'{panel.dates[k[0]]}|{k[1]}': v for k, v in placebos.items()})
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / 'acceptance.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     report(results, CHECKS, panel, args.out)
-    write_benchmarks(args.out / 'acceptance.md', benchmarks)
+    write_benchmarks(args.out / 'acceptance.md', benchmarks, payload['placebos'])
     return 0 if all(c['passed'] is not False for c in CHECKS) else 1
 
 
-def write_benchmarks(path, benchmarks):
+def write_benchmarks(path, benchmarks, placebos=None):
     text = path.read_text(encoding='utf-8').rstrip()
     lines = ['', '### 基準', '', '| 期間 | 基準 | 年化報酬 | 年化波動 | Sharpe | 最大回撤 |', '|---|---|---:|---:|---:|---:|']
     labels = dict(equal_weight='等權股票（未扣成本）', taiex_tr='發行量加權股價報酬指數', etf_0050='元大台灣50（0050）含息')
@@ -462,6 +614,12 @@ def write_benchmarks(path, benchmarks):
             if m:
                 lines.append(f"| {window} | {labels[key]} | {pct(m['cagr'])} | {m['volatility']:.1%} | "
                              f"{m['sharpe']:.2f} | {m['max_drawdown']:.1%} |")
+    if placebos:
+        lines += ['', '### 隨機選股基準（30 組，未扣成本）', '', '| 期間起點 | 換股 | 平均超額 | 5 百分位 | 95 百分位 |',
+                  '|---|---|---:|---:|---:|']
+        for key, v in placebos.items():
+            day, rebalance = key.split('|')
+            lines.append(f"| {day} | {rebalance} | {pct(v['mean'])} | {pct(v['p05'])} | {pct(v['p95'])} |")
     head, marker, tail = text.partition('\n## 三、限制')
     path.write_text(head.rstrip() + '\n' + '\n'.join(lines) + '\n\n' + marker.lstrip('\n') + tail + '\n',
                     encoding='utf-8')

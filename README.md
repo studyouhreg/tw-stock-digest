@@ -69,13 +69,23 @@ python -m tw_stock_digest --no-drive --repo-dir data
 
 ## 選股策略與回測
 
-`tw_stock_digest/strategies/` 用 strategy pattern 實作 13 個策略：9 個需要歷史資料（動能、盤中動能、隔夜反轉、52 週高點、低波動、短期反轉、均線、外資、投信），4 個只需當日快照的盤後篩選（收盤漲停、強勢收高、開高跳空、成交值集中）。所有策略都實作同一個介面 `select(view)`，回測引擎、盤後篩選和測試都只依賴這個介面。研究依據見 [docs/strategies/research.md](docs/strategies/research.md)，驗收結果見 [docs/strategies/acceptance.md](docs/strategies/acceptance.md)。
+`tw_stock_digest/strategies/` 用 strategy pattern 實作 25 個策略：
+
+- **價格與籌碼**（9 個）：動能、盤中動能、隔夜反轉、52 週高點、低波動、短期反轉、均線、外資、投信
+- **盤後篩選**（4 個，只需當日快照）：收盤漲停、強勢收高、開高跳空、成交值集中
+- **基本面與融資融券**（12 個）：月營收年增率／近 3 月／SURGE、低本益比、低淨值比、高殖利率、融資暴增、融資退場、高券資比、ROE、毛利資產比、EPS 年增
+
+所有策略都實作同一個介面 `select(view)`，回測引擎、盤後篩選和測試都只依賴這個介面。基本面資料依公布期限掛在可用的交易日上，策略讀不到尚未公布的營收或財報。研究依據見 [docs/strategies/research.md](docs/strategies/research.md)，驗收結果見 [docs/strategies/acceptance.md](docs/strategies/acceptance.md)。
 
 ```bash
-# 1. 下載官方歷史日資料到 cache/（不進 git；證交所會擋快速請求，三年約需 2 小時，可中斷續跑）
+# 1. 下載官方歷史資料到 cache/（不進 git；證交所與公開資訊觀測站會隨機擋請求，可中斷續跑）
 python -m tw_stock_digest.history --start 2023-10-02 --end 2026-10-23 \
   --datasets twse_exright,tpex_exright,twse_price,tpex_price
 python -m tw_stock_digest.history --start 2025-01-02 --end 2026-10-23 --datasets twse_inst,tpex_inst
+python -m tw_stock_digest.history --start 2023-10-02 --end 2026-10-22 \
+  --datasets twse_valuation,tpex_valuation,twse_margin,tpex_margin   # 月底估值、每週融資融券
+python -m tw_stock_digest.history --start 2022-01-01 --end 2026-09-30 --datasets mops_revenue
+python -m tw_stock_digest.history --start 2022-01-01 --end 2026-06-30 --datasets mops_income,mops_balance
 # 2. 資料驗收＋全部策略回測，輸出 docs/strategies/acceptance.{md,json}
 python -m tw_stock_digest.acceptance
 ```

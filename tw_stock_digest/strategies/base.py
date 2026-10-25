@@ -51,6 +51,11 @@ class MarketView:
     def name(self, symbol):
         return self._panel.names.get(symbol, '')
 
+    def facts(self, dataset, symbol, n=1):
+        """Up to n most recent fundamentals records already public today, oldest first."""
+        store = getattr(self._panel, 'facts', None)
+        return store.latest(dataset, symbol, self.i, n) if store is not None else []
+
     def market(self, symbol):
         return self._panel.markets.get(symbol, '')
 
@@ -103,6 +108,7 @@ class Strategy(ABC):
     rebalance = 'monthly'   # 'daily', 'weekly' or 'monthly'
     lookback = 1            # trading days of history required
     needs_flows = False
+    needs_facts = ()        # fundamentals datasets the strategy reads
 
     def __init__(self, top_n=20, min_turnover=20_000_000):
         self.top_n, self.min_turnover = top_n, min_turnover
