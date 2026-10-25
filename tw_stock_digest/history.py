@@ -28,6 +28,20 @@ DAILY = {
     'tpex_inst': ('tpex', lambda d: 'https://www.tpex.org.tw/www/zh-tw/insti/dailyTrade'
                   f'?type=Daily&sect=EW&date={d:%Y}%2F{d:%m}%2F{d:%d}&response=json'),
 }
+# Sampled daily reports: (host, url template, sample) where sample picks the
+# last trading day of each 'week' or 'month' (trading days come from twse_price).
+SAMPLED = {
+    'twse_margin': ('twse', lambda d: 'https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN'
+                    f'?date={d:%Y%m%d}&selectType=ALL&response=json', 'week'),
+    'tpex_margin': ('tpex', lambda d: 'https://www.tpex.org.tw/www/zh-tw/margin/balance'
+                    f'?date={d:%Y}%2F{d:%m}%2F{d:%d}&response=json', 'week'),
+    'twse_valuation': ('twse', lambda d: 'https://www.twse.com.tw/rwd/zh/afterTrading/BWIBBU_d'
+                       f'?date={d:%Y%m%d}&selectType=ALL&response=json', 'month'),
+    'tpex_valuation': ('tpex', lambda d: 'https://www.tpex.org.tw/www/zh-tw/afterTrading/peQryDate'
+                       f'?date={d:%Y}%2F{d:%m}%2F{d:%d}&response=json', 'month'),
+}
+MOPS = 'https://mopsov.twse.com.tw'
+MARKETS = {'sii': 'TWSE', 'otc': 'TPEX'}
 RANGES = {
     # Ex-rights / ex-dividend reference prices, fetched per calendar month.
     'twse_exright': ('twse', lambda a, b: 'https://www.twse.com.tw/rwd/zh/exRight/TWT49U'
@@ -104,6 +118,54 @@ def fetch_json(http, url, throttle, *, attempts=10, cooldown=2, sleep=time.sleep
     raise RemoteError(url.split('/')[2])
 
 
+BLOCKED = (b'FOR SECURITY REASONS', '因為安全性考量'.encode())
+
+
+def fetch_text(http, method, url, body, throttle, *, attempts=10, cooldown=2, sleep=time.sleep):
+    """Fetch an HTML report; MOPS answers blocks with a short security page."""
+    for attempt in range(attempts):
+        throttle.wait()
+        try:
+            data = http.request(method, url, body=body, headers={
+                **HEADERS, 'Accept': 'text/html',
+                **({'Content-Type': 'application/x-www-form-urlencoded'} if body else {})}, retry=False)
+            if len(data) > 2000 and not any(marker in data[:3000] for marker in BLOCKED):
+                throttle.success()
+                return data
+        except RemoteError:
+            pass
+        throttle.blocked()
+        if attempt < attempts - 1:
+            sleep(cooldown)
+    raise RemoteError(url.split('/')[2])
+
+
+def trading_days(cache, start, end):
+    """Trading days known from the cached TWSE price reports."""
+    days = []
+    for path in sorted((Path(cache) / 'twse_price').glob('*/*.json')):
+        day = dt.date(int(path.stem[:4]), int(path.stem[4:6]), int(path.stem[6:]))
+        if start <= day <= end and path.stat().st_size > 1000:
+            days.append(day)
+    return days
+
+
+def sample_days(days, period):
+    key = (lambda d: d.isocalendar()[:2]) if period == 'week' else (lambda d: (d.year, d.month))
+    last = {}
+    for day in days:
+        last[key(day)] = day
+    return sorted(last.values())
+
+
+def quarters(start, end):
+    for year in range(start.year, end.year + 1):
+        for q in range(1, 5):
+            first = dt.date(year, 3 * q - 2, 1)
+            if start <= dt.date(year, 3 * q, 28) and first <= end:
+                yield year, q
+
+
 def save(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + '.tmp')
@@ -112,7 +174,8 @@ def save(path, data):
 
 
 def jobs(cache, start, end, datasets, today):
-    """Yield (host, path, url) for everything not cached yet, newest first."""
+    """Yield (host, path, request, complete) for everything not cached yet, newest first."""
+    cache = Path(cache)
     for name in datasets:
         if name in RANGES:
             host, url = RANGES[name]
@@ -120,38 +183,66 @@ def jobs(cache, start, end, datasets, today):
                 path = range_path(cache, name, a)
                 # A month that was still open when fetched is fetched again.
                 if not path.exists() or json.loads(path.read_text()).get('_complete') is False:
-                    yield host, path, url(a, b), b < today
+                    yield host, path, dict(url=url(a, b)), b < today
+        elif name == 'mops_revenue':
+            for a, _ in reversed(list(months(start, end))):
+                for market in MARKETS:
+                    path = cache / name / market / f'{a:%Y%m}.html'
+                    if not path.exists():
+                        url = f'{MOPS}/nas/t21/{market}/t21sc03_{a.year - 1911}_{a.month}_0.html'
+                        yield 'mops', path, dict(url=url, kind='html'), True
+        elif name in ('mops_income', 'mops_balance'):
+            endpoint = 'ajax_t163sb04' if name == 'mops_income' else 'ajax_t163sb05'
+            for year, q in reversed(list(quarters(start, end))):
+                for market in MARKETS:
+                    path = cache / name / market / f'{year}Q{q}.html'
+                    if not path.exists():
+                        body = (f'encodeURIComponent=1&step=1&firstin=1&off=1&isQuery=Y&TYPEK={market}'
+                                f'&year={year - 1911}&season=0{q}').encode()
+                        yield 'mops', path, dict(url=f'{MOPS}/mops/web/{endpoint}', method='POST',
+                                                 body=body, kind='html'), True
     # Dataset-major order, so earlier datasets (prices) finish first.
     for name in datasets:
-        if name in DAILY:
-            host, url = DAILY[name]
-            for day in sorted(weekdays(start, end), reverse=True):
+        if name in DAILY or name in SAMPLED:
+            host, url, *period = DAILY.get(name) or SAMPLED[name]
+            days = (sample_days(trading_days(cache, start, end), period[0]) if period
+                    else list(weekdays(start, end)))
+            for day in sorted(days, reverse=True):
                 path = daily_path(cache, name, day)
                 if not path.exists():
-                    yield host, path, url(day), True
+                    yield host, path, dict(url=url(day)), True
 
 
 def download(cache, start, end, datasets, *, interval=2.5, http=None, log=print, today=None):
     today = today or dt.date.today()
     http = http or HttpClient(timeout=60)
     queues = {}
-    for host, path, url, complete in jobs(cache, start, end, datasets, today):
-        queues.setdefault(host, []).append((path, url, complete))
+    for host, path, request, complete in jobs(cache, start, end, datasets, today):
+        queues.setdefault(host, []).append((path, request, complete))
     failures = []
 
     def worker(host, items):
         # TWSE blocks at random, not by rate, so slowing down only loses time.
         throttle = Throttle(interval, ceiling=interval)
         log(f'[{host}] {len(items)} requests queued')
-        for index, (path, url, complete) in enumerate(items, 1):
+        for index, (path, request, complete) in enumerate(items, 1):
             try:
-                data = fetch_json(http, url, throttle)
+                if request.get('kind') == 'html':
+                    raw = fetch_text(http, request.get('method', 'GET'), request['url'],
+                                     request.get('body'), throttle)
+                else:
+                    data = fetch_json(http, request['url'], throttle)
             except RemoteError:
                 failures.append(str(path))
                 log(f'[{host}] failed {path.name}')
                 continue
-            data['_complete'] = complete
-            save(path, data)
+            if request.get('kind') == 'html':
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.with_name(path.name + '.tmp').write_bytes(raw)
+                path.with_name(path.name + '.tmp').replace(path)
+            else:
+                data['_complete'] = complete
+                save(path, data)
             if index % 25 == 0 or index == len(items):
                 log(f'[{host}] {index}/{len(items)} {path.parent.name}/{path.name} '
                     f'interval={throttle.interval:.1f}s')
@@ -173,7 +264,8 @@ def main(argv=None):
     parser.add_argument('--interval', type=float, default=2.5, help='同一網站兩次請求的最短秒數')
     args = parser.parse_args(argv)
     names = [n.strip() for n in args.datasets.split(',') if n.strip()]
-    unknown = set(names) - set(DAILY) - set(RANGES)
+    unknown = set(names) - set(DAILY) - set(RANGES) - set(SAMPLED) - {
+        'mops_revenue', 'mops_income', 'mops_balance'}
     if unknown:
         parser.error(f'unknown datasets: {sorted(unknown)}')
     failures = download(args.cache, args.start, args.end, names, interval=args.interval,

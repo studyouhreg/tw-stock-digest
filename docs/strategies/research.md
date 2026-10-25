@@ -36,6 +36,43 @@
 | 開高跳空 | 開盤較參考價 ≥ 3% | 隔夜報酬短期延續、長期反轉（Zhang 等人 2023） | `gap_up` |
 | 成交值集中 | 當日成交金額最大的股票 | 資金集中度，常見盤後觀察項目 | `turnover_leaders` |
 
+## 基本面與籌碼策略
+
+第二批策略使用月營收、估值、融資融券與季度財報。這類資料最大的陷阱是**前視偏誤**：公司 9 月的營收要到 10 月 10 日前才公布，Q2 財報要到 8 月中才公布。本專案把每筆資料掛在「第一個確定已公開的交易日」，策略在那之前讀不到（`tw_stock_digest/fundamentals.py`）：
+
+| 資料 | 來源 | 何時可用 |
+|---|---|---|
+| 月營收 | 公開資訊觀測站營業收入彙總表（上市、上櫃） | 次月 10 日公布期限後的第一個交易日 |
+| 季度財報 | 公開資訊觀測站綜合損益表、資產負債表彙總表 | 各產業最晚的法定期限後：Q1 5/31、Q2 8/31、Q3 11/30、年報 3/31（保守地不讓早申報的公司占便宜） |
+| 本益比、殖利率、淨值比 | 證交所 `BWIBBU_d`、櫃買中心 `peQryDate`，每月底 | 當日收盤後（隔天開盤下單） |
+| 融資融券餘額 | 證交所 `MI_MARGN`、櫃買中心 `margin/balance`，每週最後交易日 | 當日收盤後 |
+
+財報是年度累計數，單季數字由「本季累計 − 上季累計」算出。
+
+### 臺股實證
+
+- **月營收**：臺灣強制每月公布營收是全球少見的制度。陳柔君、劉晏睿、蕭朝興（2022）發現未預期月營收（MSURGE）能預測未來盈餘成長與股價報酬，而且和季營收、季盈餘驚喜各自有獨立的解釋力；機構投資人會在正向營收驚喜公布前加碼。洪偉倫（2026）用 2008–2025 年資料確認，控制 Fama-French 五因子與季盈餘因子後，未預期月營收仍有顯著異常報酬。邱廉松（2020）的事件研究發現 32 個產業中 25 個的營收驚喜與宣告期報酬正相關。
+- **價值與殖利率**：Hsu、Lee、Chang、Fung（2015）用隨機優勢檢定發現，在臺灣「盈餘價格比（E/P）或股利價格比（D/P）比淨值市價比（B/M）更適合當價值指標」，結果在不同期間與經濟狀況下都成立。
+- **融資融券**：Ting、Lu、Chou（2018）用 2006–2015 年上市股票月資料發現，散戶融資買進會把股價推高到合理價值之上、之後報酬較低；散戶融券則把價格壓低、之後報酬較高。
+- **獲利能力**：Hanauer、Huber（2018）用 49 國資料發現獲利能力效果是全球現象，其中以現金基礎的毛利資產比最穩健，ROE 反而在美國以外不穩定。王芯儀（2021）用 1990–2020 年臺股資料發現五因子模型中的獲利因子（RMW）是改善定價的主要來源。
+
+### 策略清單
+
+| 策略 | 規則 | 換股 | 文獻預期 | 專案代號 |
+|---|---|---|---|---|
+| 月營收年增率 | 最新月營收年增率最高 | 每月 | 正 | `revenue_yoy` |
+| 近 3 月營收年增率 | 近 3 月合計 ÷ 去年同期合計 | 每月 | 正 | `revenue_3m_yoy` |
+| 未預期月營收 SURGE | （本月年增金額 − 過去 12 月平均）÷ 標準差 | 每月 | 正 | `revenue_surprise` |
+| 低本益比 | E/P 最高，虧損排除 | 每月 | 正 | `low_pe` |
+| 低股價淨值比 | P/B 最低 | 每月 | 較弱 | `low_pb` |
+| 高殖利率 | 官方殖利率最高 | 每月 | 正 | `high_dividend_yield` |
+| 融資暴增 | 4 週融資增加最多（以日均量為單位） | 每週 | 負 | `margin_surge` |
+| 融資退場 | 4 週融資減少最多 | 每週 | 未直接檢驗 | `margin_retreat` |
+| 高券資比 | 融券 ÷ 融資最高（融資 ≥ 500 張） | 每週 | 正 | `short_interest` |
+| 高 ROE | 近 4 季淨利 ÷ 權益 | 每月 | 正（國際上較不穩定） | `roe` |
+| 毛利資產比 | 近 4 季毛利 ÷ 總資產 | 每月 | 正 | `gross_profitability` |
+| EPS 年增 | （本季 EPS − 去年同季）÷ 股價 | 每月 | 正 | `eps_growth` |
+
 ## 回測設定（對所有策略相同）
 
 - **資料**：證交所 `MI_INDEX`（上市）、櫃買中心 `afterTrading/otc`（上櫃）逐日全市場行情；除權息參考價來自證交所 `TWT49U`、櫃買中心 `exDailyQ`；三大法人來自證交所 `T86`、櫃買中心 `insti/dailyTrade`。
@@ -70,9 +107,8 @@
 
 ## 這份研究沒涵蓋的
 
-- **月營收動能、財報因子（價值、獲利、品質）**：臺股常見且有實證，但需要公開資訊觀測站的營收與財報資料，不在這一版。
 - **機器學習組合**：Bui 等人（2023）用 86 個異常因子做神經網路／PLS 可得每月約 1.2%–1.5% 多空報酬，而且前 20 個重要預測因子中有 5 個與動能相關；但需要大量因子資料，超出這一版範圍。
-- **融資融券、借券、期貨與選擇權籌碼**。
+- **借券、期貨與選擇權籌碼**；現金流量表（毛利資產比用的是會計毛利，不是 Hanauer、Huber 建議的現金基礎版本）。
 
 ## 參考文獻
 
@@ -85,4 +121,11 @@
 - 林軒白（2016）。[外資與投信之買超行為及資訊價值](https://tdr.lib.ntu.edu.tw/handle/123456789/19442)。國立臺灣大學財務金融學系碩士論文。
 - Liao, L.-C., Chang, T.-P., & Wang, P.-H. (2023). [The effect of the movement in 52-week high on momentum profit: The evidence from Taiwan](https://ijbesar.ihu.gr/docs/volume16_issue1/16_01_07.pdf). *International Journal of Business and Economic Sciences Applied Research*, 16(1), 71–86.
 - Wang, Z.-M., & Lien, D. (2023). [Limited attention, salient anchor, and the modified MAX effect: Evidence from Taiwan's stock market](https://ideas.repec.org/a/eee/ecofin/v67y2023ics106294082300027x.html). *The North American Journal of Economics and Finance*, 67.
+- 陳柔君、劉晏睿、蕭朝興（2022）。[台灣股市的未預期月營收：綜合分析](https://lawdata.com.tw/tw/detail.aspx?no=484826)。《管理學報》，39(4)，503–545。
+- 洪偉倫（2026）。[未預期營收、資產成長與樣本外預期報酬](https://thesis.lib.nccu.edu.tw/detail/5de91a46dbc69757987d294b65a5a9cc/)。國立政治大學國際經營與貿易學系碩士論文。
+- 邱廉松（2020）。[上市櫃公司每月營收宣告對股價之影響](https://thesis.lib.nccu.edu.tw/detail/ee0855d75b33caded0fddf19a6dee3b7/)。國立政治大學國際經營與貿易學系碩士論文。
+- Hsu, C.-H., Lee, K.-C., Chang, Y.-P., & Fung, H.-G. (2015). [Value versus growth: Taiwan evidence](https://www.emerald.com/insight/content/doi/10.1108/MF-07-2014-0202/full/html). *Managerial Finance*, 41(8), 845–856.
+- Ting, P. H., Lu, C. Y., & Chou, P. H. (2018). [Margin trading, differences of opinion, and stock returns](https://pure.lib.cgu.edu.tw/en/publications/margin-trading-differences-of-opinion-and-stock-returns/). *Academia Economic Papers*, 46(3), 323–366.
+- Hanauer, M., & Huber, D. (2018). [Constructing a powerful profitability factor: International evidence](https://hedgefundalpha.com/strategies/the-profitability-factor-international-evidence/)（工作論文，連結為摘要報導）.
+- 王芯儀（2021）。[五因子模型於台灣股票市場報酬的實證研究](https://etd.lib.ncu.edu.tw/thesis/detail/e61ce5f5dbba4c3fac583330c3c986e5)。國立中央大學財務金融學系碩士論文。
 - Shen, C.-H., & Wang, L.-R. (1998). [Daily serial correlation, trading volume and price limits: Evidence from the Taiwan stock market](https://ideas.repec.org/a/eee/pacfin/v6y1998i3-4p251-273.html). *Pacific-Basin Finance Journal*, 6(3–4), 251–273.
