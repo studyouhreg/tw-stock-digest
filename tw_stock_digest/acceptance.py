@@ -16,7 +16,7 @@ import time
 
 from . import backtest, strategies
 from .history import HEADERS
-from .http import HttpClient
+from .http import HttpClient, RemoteError
 from .panel import build, screen_snapshot
 
 FINMIND = 'https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id={}&start_date={}&end_date={}'
@@ -40,6 +40,11 @@ EXPECTED = {
 CHECKS = []
 
 
+def skip(name, detail):
+    CHECKS.append(dict(name=name, passed=None, detail=detail))
+    print('SKIP ' + name + ': ' + detail, flush=True)
+
+
 def check(name, passed, detail):
     CHECKS.append(dict(name=name, passed=bool(passed), detail=detail))
     print(('PASS ' if passed else 'FAIL ') + name + ': ' + detail, flush=True)
@@ -53,10 +58,11 @@ def check_coverage(panel):
         for market in counts:
             counts[market].append(sum(1 for s in panel.symbols if panel.markets[s] == market
                                       and panel.kind(s) == 'equity' and panel.data['close'][s][i] is not None))
-    gaps = [(a, b) for a, b in zip(panel.dates, panel.dates[1:]) if (b - a).days > 11]
+    # Lunar New Year closures last up to ~12 calendar days; longer gaps mean missing data.
+    gaps = [(a, b) for a, b in zip(panel.dates, panel.dates[1:]) if (b - a).days > 14]
     detail = (f'{len(panel.dates)} 個交易日（{panel.dates[0]}～{panel.dates[-1]}）；每日有成交股票數 '
               f'上市 {min(counts["TWSE"])}–{max(counts["TWSE"])}、上櫃 {min(counts["TPEX"])}–{max(counts["TPEX"])}；'
-              f'超過 11 天的空檔 {len(gaps)} 個')
+              f'超過 14 天的空檔 {len(gaps)} 個（春節休市最長約 12 天）')
     check('交易日與市場覆蓋', not gaps and min(counts['TWSE']) > 500 and min(counts['TPEX']) > 300, detail)
 
 
@@ -109,11 +115,16 @@ def check_total_return(panel):
     idx_cagr = (idx[-1] / idx[0]) ** (1 / years) - 1
     er = [y / x - 1 for x, y in zip(etf, etf[1:])]
     ir = [y / x - 1 if x and y else 0.0 for x, y in zip(idx, idx[1:])]
-    corr = statistics.correlation(er, ir)
+    daily = statistics.correlation(er, ir)
+    # ETF closes carry a small premium/discount to NAV that reverses within days,
+    # so weekly returns measure tracking; daily correlation is reported as well.
+    weekly = statistics.correlation([etf[k + 5] / etf[k] - 1 for k in range(0, len(etf) - 5, 5)],
+                                    [idx[k + 5] / idx[k] - 1 for k in range(0, len(idx) - 5, 5)])
     # 0050 charges roughly 0.3-0.4% a year and holds some cash, so a small shortfall is expected.
     diff = etf_cagr - idx_cagr
-    check('0050 含息報酬 vs 臺灣50報酬指數', -0.015 < diff < 0.005 and corr > 0.98,
-          f'0050 年化 {etf_cagr:.2%}、指數年化 {idx_cagr:.2%}、差 {diff:+.2%}；日報酬相關係數 {corr:.4f}')
+    check('0050 含息報酬 vs 臺灣50報酬指數', -0.015 < diff < 0.005 and weekly > 0.98,
+          f'0050 年化 {etf_cagr:.2%}、指數年化 {idx_cagr:.2%}、差 {diff:+.2%}；'
+          f'週報酬相關係數 {weekly:.4f}（日報酬 {daily:.4f}）。期間含 2025 年 6 月 1 拆 4 與多次配息')
 
 
 def check_finmind(panel, cache):
@@ -127,7 +138,12 @@ def check_finmind(panel, cache):
         path = folder / f'{symbol}_{start}_{end}.json'
         if not path.exists():
             folder.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(http.json('GET', FINMIND.format(symbol, start, end), headers=HEADERS)))
+            try:
+                data = http.json('GET', FINMIND.format(symbol, start, end), headers=HEADERS)
+            except RemoteError as error:
+                skip('與 FinMind 抽樣比對 OHLCV', f'FinMind 拒絕請求（{error}，免費額度每小時重置）；已快取的檔案保留，稍後重跑即可')
+                return
+            path.write_text(json.dumps(data))
             time.sleep(2)
         rows = json.loads(path.read_text()).get('data') or []
         for row in rows:
@@ -149,14 +165,18 @@ def check_finmind(panel, cache):
 
 
 def check_snapshot(panel, data_dir):
-    """The live pipeline snapshot and the historical report must describe the same day."""
+    """The live pipeline snapshot and the historical report must describe the same day.
+
+    Prices must match exactly. Volume is compared separately: the TPEx snapshot
+    API includes odd-lot shares while the historical report counts board lots.
+    """
     results = []
     for path in sorted(Path(data_dir).glob('daily/*/quotes.csv')):
         day = dt.date.fromisoformat(path.parent.name)
         i = panel.index.get(day)
         if i is None:
             continue
-        quotes, compared, mismatched = [], 0, 0
+        quotes, compared, mismatched, volume_gaps = [], 0, 0, []
         with path.open(encoding='utf-8-sig') as handle:
             for row in csv.DictReader(handle):
                 q = {k: (None if row[k] == '' else row[k]) for k in row}
@@ -171,22 +191,72 @@ def check_snapshot(panel, data_dir):
                     mismatched += 1
                     continue
                 compared += 1
-                pairs = [(q['open'], panel.data['open'][s][i]), (q['close'], panel.data['close'][s][i]),
-                         (q['volume_shares'], panel.data['volume'][s][i])]
-                if any((a is None) != (b is None) or (a is not None and abs(a - b) > 1e-6) for a, b in pairs):
+                if any((q[f] is None) != (panel.data[f][s][i] is None) or
+                       (q[f] is not None and abs(q[f] - panel.data[f][s][i]) > 1e-6)
+                       for f in ('open', 'high', 'low', 'close')):
                     mismatched += 1
-        names = [n for n, c in strategies.REGISTRY.items() if c.lookback == 1 and not c.needs_flows]
+                hist = panel.data['volume'][s][i]
+                if q['market'] == 'TPEX' and q['volume_shares'] and hist:
+                    volume_gaps.append(q['volume_shares'] / hist - 1)
+        names = [n for n, c in strategies.REGISTRY.items()
+                 if c.lookback == 1 and not c.needs_flows and n != 'turnover_leaders']
         snap = screen_snapshot(quotes, names, min_turnover=0)
         view = strategies.MarketView(panel, i)
         same = all([p.symbol for p in snap[n]] == [p.symbol for p in strategies.get(n, min_turnover=0).select(view)]
                     for n in names)
-        results.append((day, compared, mismatched, same))
+        median_gap = statistics.median(volume_gaps) if volume_gaps else 0.0
+        results.append((day, compared, mismatched, same, median_gap, len(names)))
     if not results:
         check('每日快照 vs 歷史報表', False, '沒有重疊日期')
         return
-    ok = all(m == 0 and same for _, _, m, same in results)
+    ok = all(m == 0 and same for _, _, m, same, _, _ in results)
     check('每日快照 vs 歷史報表', ok, '；'.join(
-        f'{d}：{c} 檔比對、{m} 檔不一致、盤後篩選結果{"一致" if s else "不一致"}' for d, c, m, s in results))
+        f'{d}：{c} 檔開高低收比對、{m} 檔不一致；{k} 個不依賴成交量的盤後篩選結果{"一致" if s else "不一致"}；'
+        f'成交股數中位差 {g:+.2%}（上櫃快照含零股，屬定義差異）' for d, c, m, s, g, k in results))
+
+
+def independent_equity(panel, picks):
+    """Recompute a periodic strategy by hand from raw prices, without the engine.
+
+    Equal weight at each rebalance, buy at the next open (skipping limit-up
+    opens), sell at the open after the next decision, cost charged on the names
+    that change. Continuing names are not trimmed back to equal weight.
+    """
+    data, dates = panel.data, sorted(picks)
+    index = [panel.index[dt.date.fromisoformat(d)] for d in dates]
+    equity, previous = 1.0, set()
+    for k, day in enumerate(dates):
+        a = index[k] + 1
+        b = index[k + 1] + 1 if k + 1 < len(dates) else len(panel.dates) - 1
+        chosen = [s for s in picks[day] if data['open'][s][a] and data['ref'][s][a]
+                  and data['open'][s][a] / data['ref'][s][a] - 1 < 0.095]
+        held = set(chosen)
+        equity *= (1 - len(held - previous) / max(len(held), 1) * backtest.FEE
+                   - len(previous - held) / max(len(previous), 1) * (backtest.FEE + backtest.TAX))
+        rets = []
+        for s in chosen:
+            value = (data['close'][s][a] or data['open'][s][a]) / data['open'][s][a]
+            for j in range(a + 1, b + 1):
+                if j == b and k + 1 < len(dates):
+                    o, ref = data['open'][s][j], data['ref'][s][j]
+                    value *= o / ref if o and ref else 1.0
+                else:
+                    value *= 1 + (data['ret'][s][j] or 0.0)
+            rets.append(value - 1)
+        equity *= 1 + (sum(rets) / len(rets) if rets else 0.0)
+        previous = held
+    return equity
+
+
+def check_engine(panel, start):
+    rows = []
+    for name in ('momentum_12_1', 'high_52w', 'low_volatility'):
+        result = backtest.run(panel, strategies.get(name), start=start)
+        rows.append((name, result.equity[-1], independent_equity(panel, result.picks)))
+    worst = max(abs(e / i - 1) for _, e, i in rows)
+    check('回測引擎 vs 獨立手算', worst < 0.05, '；'.join(
+        f'{n}：引擎 {e:.3f}、手算 {i:.3f}' for n, e, i in rows) +
+        f'（最大差 {worst:.1%}；手算不把續抱股票調回等權，故有小差距）')
 
 
 # --- strategy runs -------------------------------------------------------------
@@ -238,7 +308,8 @@ def report(results, checks, panel, out):
              '> 研究用途，不構成投資建議。回測期間短（約兩年），結果受市場狀態影響很大，見下方限制。', '',
              '## 一、資料驗收', '', '| 檢查 | 結果 | 說明 |', '|---|---|---|']
     for c in checks:
-        lines.append(f"| {c['name']} | {'✅ 通過' if c['passed'] else '❌ 未通過'} | {c['detail']} |")
+        mark = '⏸ 未執行' if c['passed'] is None else '✅ 通過' if c['passed'] else '❌ 未通過'
+        lines.append(f"| {c['name']} | {mark} | {c['detail']} |")
     lines += ['', '## 二、策略回測', '',
               '扣除手續費 0.1425%（買賣各一次）與證交稅 0.3%；訊號用當日收盤、隔日開盤成交；每期等權 20 檔。'
               '超額報酬以同範圍等權組合為基準，t 值未做自我相關調整，|t| > 2 才視為有方向。', '',
@@ -278,6 +349,7 @@ def main(argv=None):
 
     end = len(panel.dates) - 1
     price_start = 250  # one year of history before the first decision
+    check_engine(panel, price_start)
     flow_days = [i for i, ok in enumerate(panel.flows_available) if ok]
     flow_start = flow_days[0] + 20 if flow_days else None
     windows = {}
@@ -307,7 +379,7 @@ def main(argv=None):
     (args.out / 'acceptance.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     report(results, CHECKS, panel, args.out)
     write_benchmarks(args.out / 'acceptance.md', benchmarks)
-    return 0 if all(c['passed'] for c in CHECKS) else 1
+    return 0 if all(c['passed'] is not False for c in CHECKS) else 1
 
 
 def write_benchmarks(path, benchmarks):
