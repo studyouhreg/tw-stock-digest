@@ -150,6 +150,82 @@ class RepositoryArchiveTests(unittest.TestCase):
         self.assertEqual((self.archive / 'latest.md').read_bytes(), before)
         self.assertEqual(json.loads((self.archive / 'latest.json').read_text())['trade_date'], newer)
 
+    def latest_mode(self, **kwargs):
+        options = dict(fetch=fetch_demo, archive_root=self.archive)
+        options.update(kwargs)
+        return run(None, self.output, ['0050', '2330'], **options)
+
+    def snapshot_files(self):
+        return {p.relative_to(self.archive): p.read_bytes() for p in self.archive.rglob('*') if p.is_file()}
+
+    def test_default_mode_collects_lagging_source_snapshot(self):
+        # The official endpoints report the previous trading day; the scheduled
+        # run must still save it instead of skipping against today's date.
+        result = self.latest_mode()
+        self.assertEqual(result['status'], 'complete')
+        self.assertIsNone(result['expected_date'])
+        self.assertEqual(result['source_date'], DEMO_DATE)
+        self.assertTrue((self.archive / 'daily' / DEMO_DATE / 'quotes.csv').exists())
+        validate_archive(self.archive)
+
+    def test_default_mode_skips_already_saved_day_without_changes(self):
+        self.latest_mode()
+        before = self.snapshot_files()
+        drive = Mock()
+        self.output = self.root / 'fresh-runner'
+        result = self.latest_mode(drive=drive)
+        self.assertEqual((result['status'], result['reason']), ('skipped', 'already_saved'))
+        self.assertEqual(self.snapshot_files(), before)
+        self.assertFalse(drive.method_calls)
+
+    def test_default_mode_skips_source_older_than_saved(self):
+        def newer(market):
+            return [{**row, 'Date': '1151022'} for row in fetch_demo(market)]
+        self.latest_mode(fetch=newer)
+        before = self.snapshot_files()
+        result = self.latest_mode()
+        self.assertEqual((result['status'], result['reason']), ('skipped', 'older_than_saved'))
+        self.assertEqual(result['saved_date'], '2026-10-22')
+        self.assertEqual(self.snapshot_files(), before)
+
+    def test_default_mode_retries_partly_saved_day(self):
+        drive = Mock()
+        drive.folder.side_effect = RuntimeError('Drive offline')
+        with self.assertRaises(RuntimeError):
+            self.latest_mode(drive=drive)
+        self.assertEqual(json.loads((self.archive / 'latest.json').read_text())['snapshot_status'], 'collected')
+        result = self.latest_mode()
+        self.assertEqual(result['status'], 'complete')
+        self.assertEqual(json.loads((self.archive / 'latest.json').read_text())['snapshot_status'], 'complete')
+
+    def test_default_mode_runs_newly_enabled_analysis_once(self):
+        self.latest_mode()
+        analyzer = Mock(return_value=dict(text='new analysis', model='test-model', usage={}))
+        first = self.latest_mode(analysis_config=self.config, analyzer=analyzer)
+        self.assertEqual(first['analysis'], 'generated')
+        second = self.latest_mode(analysis_config=self.config, analyzer=analyzer)
+        self.assertEqual((second['status'], second['reason']), ('skipped', 'already_saved'))
+        self.assertEqual(analyzer.call_count, 1)
+
+    def test_default_mode_rejects_future_source_date(self):
+        future = dt.date.today() + dt.timedelta(days=3)
+        roc = f'{future.year - 1911}{future:%m%d}'
+        def ahead(market):
+            return [{**row, 'Date': roc} for row in fetch_demo(market)]
+        with self.assertRaisesRegex(ValueError, 'future'):
+            self.latest_mode(fetch=ahead)
+        self.assertFalse(self.archive.exists())
+
+    def test_cli_without_date_uses_latest_source_day(self):
+        markets = {url: market for market, url in SOURCES.items()}
+        args = ['tw_stock_digest', '--output', str(self.output), '--repo-dir', str(self.archive), '--no-drive']
+        with patch('sys.argv', args), patch.dict(os.environ, {}, clear=True), \
+                patch('tw_stock_digest.pipeline.HttpClient.json',
+                      side_effect=lambda method, url: fetch_demo(markets[url])), \
+                patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 0)
+        self.assertTrue((self.archive / 'daily' / DEMO_DATE / 'quotes.csv').exists())
+
     def test_archive_validator_rejects_modified_and_unexpected_files(self):
         self.collect()
         (self.archive / 'token.json').write_text('secret')

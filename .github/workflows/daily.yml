@@ -2,8 +2,12 @@ name: Taiwan stock digest
 
 on:
   schedule:
-    # 19:17 Asia/Taipei (UTC+8), Monday-Friday. GitHub may delay scheduled jobs.
-    - cron: '17 11 * * 1-5'
+    # 08:17, 13:17 and 19:17 Asia/Taipei (UTC+8), every day. TPEx updates its
+    # snapshot the same evening but TWSE only the next morning, so the two
+    # agree only from morning to evening; GitHub also delays runs by hours.
+    # Runs that find nothing new, or markets out of sync, commit nothing.
+    # GitHub may delay scheduled jobs.
+    - cron: '17 0,5,11 * * *'
   workflow_dispatch:
     inputs:
       demo:
