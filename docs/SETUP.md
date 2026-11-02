@@ -118,6 +118,7 @@ python -m tw_stock_digest --no-drive --watchlist 0050,2330,6488
 | 情況 | 處理 |
 |---|---|
 | `status=skipped`，`reason=already_saved` | 正常：來源尚未出現新交易日，下一次排程會再檢查 |
+| `status=skipped`，`reason=markets_out_of_sync` | 正常：晚上櫃買中心已更新、證交所要隔天早上才更新；隔天早上的排程會收集 |
 | `status=skipped`，`reason=stale_or_nontrading_day` | 只在指定 `--date` 時出現；來源尚未更新到該日，可能休市或延遲 |
 | `status=skipped`，`reason=older_than_saved` | 來源回傳比已保存更舊的日期，通常是來源暫時異常，稍後重跑 |
 | `stage=configuration` | 檢查兩個 Drive secrets 是否完整；OAuth 是否到期；是否開啟分析卻沒有 key |

@@ -112,6 +112,13 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             write(output / 'raw' / f'{market}.json', raw[market])
             state['fetched_markets'].append(market)
             quotes.extend(normalize(market, data))
+        # TPEx publishes its snapshot the same evening, TWSE only the next
+        # morning, so for part of each day the two describe different trading
+        # days. That is not an error: skip and let a later scheduled run retry.
+        market_dates = {q['market']: q['trade_date'] for q in quotes}
+        if len(set(market_dates.values())) > 1:
+            state.update(status='skipped', reason='markets_out_of_sync', market_dates=market_dates)
+            return state
         context = build_context(quotes, watchlist)
         trade_date = context['trade_date']
         state['source_date'] = trade_date

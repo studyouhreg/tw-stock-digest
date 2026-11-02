@@ -23,7 +23,7 @@ python -m unittest discover -s tests -v
 python -m tw_stock_digest --no-drive --repo-dir data
 ```
 
-本專案已設定 GitHub Actions：**每天臺灣時間 08:17、13:17、19:17**（UTC `17 0,5,11 * * *`），亦可手動執行。官方快照的更新時間沒有保證，且端點無法回補，所以每天輪詢數次：來源出現尚未保存的交易日就收集，否則寫出 skipped（`already_saved`）且不產生提交。排程不是準點保證。
+本專案已設定 GitHub Actions：**每天臺灣時間 08:17、13:17、19:17**（UTC `17 0,5,11 * * *`），亦可手動執行。櫃買中心當天晚上就更新快照，證交所要到**隔天早上**才更新，兩邊只有在隔天早上到傍晚之間是同一個交易日；GitHub 排程也常延遲數小時。所以每天輪詢數次：兩個市場是同一個尚未保存的交易日就收集；日期不一致寫出 skipped（`markets_out_of_sync`），已保存寫出 skipped（`already_saved`），兩者都不產生提交，等下一次排程。
 
 ## 資料如何走
 

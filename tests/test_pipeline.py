@@ -61,12 +61,23 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(drive.files, {})
         self.assertTrue((self.output / 'raw/TWSE.json').exists())
 
-    def test_mismatched_market_dates_fail_visibly(self):
+    def test_mismatched_market_dates_skip_for_a_later_retry(self):
+        drive = MemoryDrive()
         def mixed(market):
-            return [twse()] if market == 'TWSE' else [tpex(Date='1151020')]
+            return [twse()] if market == 'TWSE' else [tpex(Date='1151022')]
+        for target in ('2026-10-21', None):
+            result = run(target, self.output, [], fetch=mixed, drive=drive)
+            self.assertEqual((result['status'], result['reason']), ('skipped', 'markets_out_of_sync'))
+            self.assertEqual(result['market_dates'], {'TWSE': '2026-10-21', 'TPEX': '2026-10-22'})
+            self.assertEqual(json.loads((self.output / 'status.json').read_text())['status'], 'skipped')
+        self.assertFalse((self.output / 'daily').exists())
+        self.assertEqual(drive.files, {})
+
+    def test_mixed_dates_within_one_market_still_fail(self):
+        def broken(market):
+            return [twse(), twse('2317', Date='1151020')] if market == 'TWSE' else [tpex()]
         with self.assertRaises(ValueError):
-            run('2026-10-21', self.output, [], fetch=mixed)
-        self.assertEqual(json.loads((self.output / 'status.json').read_text())['status'], 'failed')
+            run('2026-10-21', self.output, [], fetch=broken)
 
     def test_unavailable_market_keeps_first_market_raw(self):
         def partial(market):

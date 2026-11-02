@@ -15,6 +15,7 @@ SKIP_MESSAGES = {
     'stale_or_nontrading_day': '來源尚無指定的預期日期，可能休市或延遲更新；',
     'already_saved': '來源最新交易日已完整保存，無新資料；',
     'older_than_saved': '來源回傳的交易日比已保存的還舊；',
+    'markets_out_of_sync': '證交所與櫃買中心的最新快照不是同一個交易日（證交所隔天早上才更新），等下次排程；',
 }
 
 
