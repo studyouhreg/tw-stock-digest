@@ -76,8 +76,11 @@ def already_saved(record, trade_date, analysis_wanted):
 
 def run(target_date, output, watchlist, *, demo=False, drive=None,
         analysis_config=None, fetch=None, analyzer=analyze, archive_root=None,
-        configure_remote=None, analysis_requested=False):
+        configure_remote=None, analysis_requested=False, sources=None, source_note=None):
     """Collect one snapshot.
+
+    ``sources`` and ``source_note`` describe a non-default origin (backfill)
+    in the manifest and context; they do not change how data is fetched.
 
     target_date=None (the scheduled default) accepts whatever trading day the
     official snapshot currently reports, as long as it is newer than what is
@@ -120,6 +123,9 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             state.update(status='skipped', reason='markets_out_of_sync', market_dates=market_dates)
             return state
         context = build_context(quotes, watchlist)
+        if sources:
+            for market, info in context['markets'].items():
+                info['source'] = sources[market]
         trade_date = context['trade_date']
         state['source_date'] = trade_date
         if target_date is not None:
@@ -158,9 +164,11 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             'facts.md': (factual_report(context, demo).encode(), 'text/markdown'),
         })
         manifest = dict(schema_version=1, status='collected', trade_date=trade_date, demo=demo,
-                        captured_at_utc=state['captured_at_utc'], sources=SOURCES,
+                        captured_at_utc=state['captured_at_utc'], sources=sources or SOURCES,
                         row_count=len(quotes),
                         files_sha256={name: hashlib.sha256(data).hexdigest() for name, (data, _) in core.items()})
+        if source_note:
+            manifest['source_note'] = source_note
         core['manifest.json'] = (json_bytes(manifest), 'application/json')
         for name, (content, _) in core.items():
             write(day / name, content)
