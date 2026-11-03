@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "trade_date": "2026-10-14",
+  "demo": false,
+  "captured_at_utc": "2026-11-03T07:17:17.161482+00:00",
+  "sources": {
+    "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d:%Y%m%d}&type=ALLBUT0999&response=json",
+    "TPEX": "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json"
+  },
+  "row_count": 2333,
+  "files_sha256": {
+    "analysis.json": "085e18bd185cdb7812ffc59caa5aea21900b4a551a6682682bc2b2efb0773405",
+    "analysis.md": "2fbc928acca0507db543f6411f84e85884653a26aa4d6c1f5bb4b8ca26d7c4c8",
+    "claude-prompt.md": "96edbe5e92b02555b8e73082d56338e721c9be4d8b4c5a8a34e7e784aa1a1d59",
+    "context.json": "9cb3b414c27ed4333092b7aab0eec0a3d89db3b944db4ebee479422a9c373744",
+    "extras.csv": "3cd4148f0ffcbe37eb59794c20092352a70162009a78e5af84228561d28f84a0",
+    "facts.md": "8ddc23952f076461071c71dfeebb52c74c0530b7968f10ec7cde9ff9a4e4eea6",
+    "quotes.csv": "9bb9f226de9cc57005312af32b057a042c6cb6f63725183f9a567d82ae493bea"
+  },
+  "extras": {
+    "twse_flows": "ok",
+    "tpex_flows": "ok",
+    "twse_valuation": "ok",
+    "tpex_valuation": "ok",
+    "twse_industry": "ok",
+    "tpex_industry": "ok"
+  },
+  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change.",
+  "analysis": "disabled",
+  "archive_format": "github-normalized-v1",
+  "source_files_sha256": {
+    "analysis.json": "085e18bd185cdb7812ffc59caa5aea21900b4a551a6682682bc2b2efb0773405",
+    "analysis.md": "2fbc928acca0507db543f6411f84e85884653a26aa4d6c1f5bb4b8ca26d7c4c8",
+    "raw_TWSE.json": "7ce5fa5cb94c469204fa42bcb767d0ec772671a0d720d9b13eba8ebd72941d38",
+    "raw_TPEX.json": "32dbbc0fff53400a6533cb279a0d7658467e566e2fa72f7dbaa24fc101c61f03",
+    "quotes.csv": "9bb9f226de9cc57005312af32b057a042c6cb6f63725183f9a567d82ae493bea",
+    "extras.csv": "3cd4148f0ffcbe37eb59794c20092352a70162009a78e5af84228561d28f84a0",
+    "context.json": "9cb3b414c27ed4333092b7aab0eec0a3d89db3b944db4ebee479422a9c373744",
+    "claude-prompt.md": "96edbe5e92b02555b8e73082d56338e721c9be4d8b4c5a8a34e7e784aa1a1d59",
+    "facts.md": "8ddc23952f076461071c71dfeebb52c74c0530b7968f10ec7cde9ff9a4e4eea6"
+  },
+  "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
+}
