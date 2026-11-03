@@ -62,3 +62,23 @@ class HttpTests(unittest.TestCase):
         with self.assertRaises(RemoteError):
             HttpClient(sleep=lambda _: None).json('POST', self.base + '/retry', payload={})
         self.assertEqual(self.counts['/retry'], 1)
+
+
+class PersistentJsonTests(unittest.TestCase):
+    def test_retries_truncated_json_and_block_pages(self):
+        from tw_stock_digest.http import RemoteError, persistent_json
+
+        class Flaky:
+            def __init__(self):
+                self.calls = 0
+
+            def json(self, method, url, **kwargs):
+                self.calls += 1
+                if self.calls < 3:
+                    raise RemoteError('www.tpex.org.tw')  # truncated body or block page
+                return [{'Date': '1151102'}]
+        http = Flaky()
+        self.assertEqual(persistent_json(http, 'https://x.example/a', sleep=lambda s: None), [{'Date': '1151102'}])
+        self.assertEqual(http.calls, 3)
+        with self.assertRaises(RemoteError):
+            persistent_json(Flaky(), 'https://x.example/a', attempts=2, sleep=lambda s: None)

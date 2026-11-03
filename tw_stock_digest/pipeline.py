@@ -11,7 +11,7 @@ from .analysis import analyze, analysis_key, make_prompt
 from .demo import DEMO_DATE, demo_extras, fetch_demo
 from .insights import (compute as compute_insights, extras_complete, extras_csv, fetch_extras, keep_previous,
                        load_history, read_saved_extras)
-from .http import HttpClient
+from .http import HttpClient, persistent_json
 from .market import SOURCES, normalize, build_context
 from .report import factual_report
 from .repo_archive import publish_snapshot
@@ -110,7 +110,9 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         configure_remote, analysis_requested = None, False
     if fetch is None:
         http = HttpClient()
-        fetch = lambda market: http.json('GET', SOURCES[market])
+        # TPEx often cuts its ~5 MB response off mid-stream; the truncated body
+        # fails JSON parsing, which plain retries do not cover. Retry it too.
+        fetch = lambda market: persistent_json(http, SOURCES[market], attempts=6, pause=10.0)
         extras = extras or fetch_extras
     # A caller-supplied fetch (tests, backfill) gets extras only if it asks for them.
     extras = extras or (lambda trade_date: ({}, {'extras': 'not_requested'}))

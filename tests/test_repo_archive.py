@@ -16,6 +16,11 @@ from tw_stock_digest.pipeline import run
 from tw_stock_digest.repo_archive import publish_snapshot, validate_archive
 
 
+def offline_extras(trade_date):
+    """Stand-in for the live extras sources: unit tests never touch the network."""
+    return {}, {'extras': 'not_requested'}
+
+
 class RepositoryArchiveTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -82,7 +87,8 @@ class RepositoryArchiveTests(unittest.TestCase):
                 '--repo-dir', str(self.archive)]
         with patch('sys.argv', args), patch.dict(os.environ, env, clear=True), \
                 patch('tw_stock_digest.pipeline.HttpClient.json',
-                      side_effect=lambda method, url: fetch_demo(markets[url])), \
+                      side_effect=lambda method, url, **kwargs: fetch_demo(markets[url])), \
+                patch('tw_stock_digest.pipeline.fetch_extras', side_effect=offline_extras), \
                 patch('tw_stock_digest.__main__.Drive.from_env', side_effect=configure), \
                 patch('sys.stdout', new_callable=io.StringIO), patch('sys.stderr', new_callable=io.StringIO):
             return main()
@@ -221,7 +227,8 @@ class RepositoryArchiveTests(unittest.TestCase):
         args = ['tw_stock_digest', '--output', str(self.output), '--repo-dir', str(self.archive), '--no-drive']
         with patch('sys.argv', args), patch.dict(os.environ, {}, clear=True), \
                 patch('tw_stock_digest.pipeline.HttpClient.json',
-                      side_effect=lambda method, url: fetch_demo(markets[url])), \
+                      side_effect=lambda method, url, **kwargs: fetch_demo(markets[url])), \
+                patch('tw_stock_digest.pipeline.fetch_extras', side_effect=offline_extras), \
                 patch('sys.stdout', new_callable=io.StringIO):
             self.assertEqual(main(), 0)
         self.assertTrue((self.archive / 'daily' / DEMO_DATE / 'quotes.csv').exists())
