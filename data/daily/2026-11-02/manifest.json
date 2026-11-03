@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "trade_date": "2026-11-02",
+  "demo": false,
+  "captured_at_utc": "2026-11-03T07:23:45.685562+00:00",
+  "sources": {
+    "TWSE": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
+    "TPEX": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
+  },
+  "row_count": 2347,
+  "files_sha256": {
+    "analysis.json": "5256d631d2821bec852a6ed2bb78b513880c7f286a3a97903436889e4e8408a0",
+    "analysis.md": "8e496e65c940332801619a2fe7425c11727eee17e9f14cdf53659e99715d270d",
+    "claude-prompt.md": "2f971d2d3e3f91e7e36214e89362c793adc35684faf9f7424b10164a1c5e236f",
+    "context.json": "b6a7468d66802411aa67895995889951ae18b2bd868105b70eb050f2c4d0849a",
+    "extras.csv": "647a8f7e9480873cc685f6d806bf9f701212e09e3dcac50b60df691a6e0a3571",
+    "facts.md": "149706e973ecc2fe0b926e074e9099dcab309640f78370c769142a5ebb31d92b",
+    "quotes.csv": "103bda881598f8f975a945da0d82c1bd1fb121dd9e25045bf53f4df3f4f34c12"
+  },
+  "extras": {
+    "twse_flows": "ok",
+    "tpex_flows": "ok",
+    "twse_valuation": "ok",
+    "tpex_valuation": "ok",
+    "twse_industry": "ok",
+    "tpex_industry": "ok"
+  },
+  "analysis": "disabled",
+  "archive_format": "github-normalized-v1",
+  "source_files_sha256": {
+    "analysis.json": "5256d631d2821bec852a6ed2bb78b513880c7f286a3a97903436889e4e8408a0",
+    "analysis.md": "8e496e65c940332801619a2fe7425c11727eee17e9f14cdf53659e99715d270d",
+    "raw_TWSE.json": "d12080d4820caf39734ab60096a643835be15ec8579b073bcf36a1f15ee53ab8",
+    "raw_TPEX.json": "e5c2f05bea0ae21a180541eb666d847850322c359acea34ace4310265bb33767",
+    "quotes.csv": "103bda881598f8f975a945da0d82c1bd1fb121dd9e25045bf53f4df3f4f34c12",
+    "extras.csv": "647a8f7e9480873cc685f6d806bf9f701212e09e3dcac50b60df691a6e0a3571",
+    "context.json": "b6a7468d66802411aa67895995889951ae18b2bd868105b70eb050f2c4d0849a",
+    "claude-prompt.md": "2f971d2d3e3f91e7e36214e89362c793adc35684faf9f7424b10164a1c5e236f",
+    "facts.md": "149706e973ecc2fe0b926e074e9099dcab309640f78370c769142a5ebb31d92b"
+  },
+  "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
+}
