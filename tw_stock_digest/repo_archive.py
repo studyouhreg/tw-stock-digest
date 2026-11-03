@@ -7,8 +7,12 @@ from pathlib import Path
 import re
 import tempfile
 
+from .insights import extras_complete
+
 FILES = {'quotes.csv', 'context.json', 'facts.md', 'claude-prompt.md', 'analysis.json', 'analysis.md'}
 RAW_FILES = {'raw_TWSE.json', 'raw_TPEX.json'}
+# Added later; snapshots saved before it existed do not have it.
+OPTIONAL = {'extras.csv'}
 CACHE = re.compile(r'analysis-cache-([0-9a-f]{64})\.json')
 
 
@@ -54,11 +58,11 @@ def checked_snapshot(day, *, source=False):
     hashes = manifest.get('files_sha256')
     if not isinstance(hashes, dict) or not FILES.issubset(hashes):
         raise ValueError('Incomplete snapshot manifest')
-    if source and set(hashes) != FILES | RAW_FILES:
+    if source and not FILES | RAW_FILES <= set(hashes) <= FILES | RAW_FILES | OPTIONAL:
         raise ValueError('Unexpected source manifest files')
     content = {}
     for name, expected in hashes.items():
-        if name not in FILES and not (source and name in RAW_FILES) and not CACHE.fullmatch(name):
+        if name not in FILES | OPTIONAL and not (source and name in RAW_FILES) and not CACHE.fullmatch(name):
             raise ValueError('Unexpected snapshot path')
         content[name] = read_file(day / name)
         if digest(content[name]) != expected:
@@ -89,7 +93,7 @@ def publish_snapshot(day, archive, report, analysis):
     if destination.exists():
         _, previous = checked_snapshot(destination)
         content.update({name: value for name, value in previous.items() if CACHE.fullmatch(name)})
-    content.update({name: source[name] for name in FILES})
+    content.update({name: source[name] for name in FILES | (OPTIONAL & set(source))})
     for path in day.glob('analysis-cache-*.json'):
         if CACHE.fullmatch(path.name):
             value = read_file(path)
@@ -122,6 +126,8 @@ def publish_snapshot(day, archive, report, analysis):
     if previous_latest is None or trade_date >= previous_latest:
         latest = dict(trade_date=trade_date, analysis=analysis, snapshot_status=manifest['status'],
                       demo=False, report_sha256=digest(report))
+        if 'extras' in manifest:
+            latest['extras_complete'] = extras_complete(manifest['extras'])
         atomic_write(archive / 'latest.md', report)
         atomic_write(archive / 'latest.json', encoded(latest))
 
