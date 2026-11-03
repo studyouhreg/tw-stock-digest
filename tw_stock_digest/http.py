@@ -62,3 +62,22 @@ class HttpClient:
             return json.loads(result)
         except (ValueError, UnicodeError):
             raise RemoteError(urllib.parse.urlsplit(url).hostname) from None
+
+
+def persistent_json(http, url, *, headers=None, attempts=10, pause=2.0, sleep=time.sleep):
+    """GET JSON from a site that randomly answers with a block page (TWSE, MOPS).
+
+    TWSE turns away about half of all requests with a redirect to a security
+    page regardless of request rate; short repeated attempts recover fastest.
+    """
+    headers = {'User-Agent': 'Mozilla/5.0', **(headers or {})}  # TWSE rejects descriptive agents
+    for attempt in range(attempts):
+        try:
+            data = http.json('GET', url, headers=headers, retry=False)
+            if isinstance(data, (dict, list)):
+                return data
+        except RemoteError:
+            pass
+        if attempt < attempts - 1:
+            sleep(pause)
+    raise RemoteError(urllib.parse.urlsplit(url).hostname)

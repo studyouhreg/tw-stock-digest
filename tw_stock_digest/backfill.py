@@ -13,20 +13,21 @@ Differences from a live run, recorded in the manifest:
 """
 import argparse
 import datetime as dt
+import json
 import os
 from pathlib import Path
 import re
 import sys
 import time
 
-from .http import HttpClient, RemoteError
+from .http import HttpClient, persistent_json
+from .insights import fetch_extras
 from .pipeline import run
 
 URLS = {
     'TWSE': 'https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d:%Y%m%d}&type=ALLBUT0999&response=json',
     'TPEX': 'https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json',
 }
-HEADERS = {'User-Agent': 'Mozilla/5.0'}  # TWSE rejects descriptive agent strings
 NOTE = ('Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). '
         'TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change.')
 
@@ -72,20 +73,12 @@ def tpex_rows(data, day):
             for r in tables[0]['data']]
 
 
-def fetcher(day, *, http=None, attempts=10, pause=2.0, sleep=time.sleep):
+def fetcher(day, *, http=None, sleep=time.sleep):
     http = http or HttpClient(timeout=60)
     convert = {'TWSE': twse_rows, 'TPEX': tpex_rows}
 
     def fetch(market):
-        for attempt in range(attempts):
-            try:
-                data = http.json('GET', URLS[market].format(d=day), headers=HEADERS, retry=False)
-                if isinstance(data, dict):
-                    return convert[market](data, day)
-            except RemoteError:
-                pass  # TWSE answers about half of requests with a security page
-            sleep(pause)
-        raise RemoteError(market)
+        return convert[market](persistent_json(http, URLS[market].format(d=day), sleep=sleep), day)
     return fetch
 
 
@@ -95,14 +88,24 @@ def main(argv=None):
                         help='要補的交易日，可重複指定')
     parser.add_argument('--output', type=Path, default=Path('output'))
     parser.add_argument('--repo-dir', type=Path, default=Path('data'))
+    parser.add_argument('--raw-dir', type=Path,
+                        help='重建單日時改用該次正式執行保存的 TWSE.json／TPEX.json（Actions artifact 的 raw/）')
     parser.add_argument('--watchlist', default=os.getenv('WATCHLIST', '0050,2330,2317,2454,6488'))
     args = parser.parse_args(argv)
     watchlist = [s.strip().upper() for s in args.watchlist.split(',') if s.strip()]
+    if args.raw_dir and len(args.date) != 1:
+        parser.error('--raw-dir rebuilds exactly one --date')
     failed = 0
     for day in sorted(args.date):
         try:
-            state = run(day.isoformat(), args.output / 'backfill', watchlist, fetch=fetcher(day),
-                        archive_root=args.repo_dir, sources=URLS, source_note=NOTE)
+            if args.raw_dir:
+                # The original snapshot API responses: same data as the live run.
+                fetch = lambda market: json.loads((args.raw_dir / f'{market}.json').read_text(encoding='utf-8'))
+                options = {}
+            else:
+                fetch, options = fetcher(day), dict(sources=URLS, source_note=NOTE)
+            state = run(day.isoformat(), args.output / 'backfill', watchlist, fetch=fetch,
+                        archive_root=args.repo_dir, extras=fetch_extras, **options)
             print(day, state['status'], state.get('reason', ''), state.get('row_count', ''), flush=True)
             failed += state['status'] != 'complete'
         except Exception as exc:  # report and continue with the next day
