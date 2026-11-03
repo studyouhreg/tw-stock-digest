@@ -9,7 +9,8 @@ from zoneinfo import ZoneInfo
 
 from .analysis import analyze, analysis_key, make_prompt
 from .demo import DEMO_DATE, demo_extras, fetch_demo
-from .insights import compute as compute_insights, extras_complete, extras_csv, fetch_extras, load_history
+from .insights import (compute as compute_insights, extras_complete, extras_csv, fetch_extras, keep_previous,
+                       load_history, read_saved_extras)
 from .http import HttpClient
 from .market import SOURCES, normalize, build_context
 from .report import factual_report
@@ -159,6 +160,12 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
                 return state
         state['stage'] = 'collect_extras'
         extra_rows, extra_status = extras(trade_date)
+        # A retry must not lose a source that an earlier save of this day already had.
+        saved_root = archive_root if archive_root is not None else output
+        kept = keep_previous(extra_rows, extra_status, *read_saved_extras(Path(saved_root) / 'daily' / trade_date),
+                             {q['symbol']: q['market'] for q in quotes})
+        if kept:
+            state['extras_kept_from_saved'] = kept
         state['extras'] = extra_status
         state['extras_complete'] = extras_complete(extra_status)
         history = load_history(archive_root if archive_root is not None else output, trade_date)

@@ -18,6 +18,7 @@ section reports how many days it had, and says so when that is not enough.
 import csv
 import datetime as dt
 import io
+import json
 from pathlib import Path
 import re
 import statistics
@@ -110,7 +111,7 @@ def fetch_extras(trade_date, *, http=None, get=None):
     """Return (extras by symbol, status by source). Never raises for one bad source."""
     day = dt.date.fromisoformat(trade_date)
     http = http or HttpClient(timeout=60)
-    get = get or (lambda url: persistent_json(http, url))
+    get = get or (lambda url: persistent_json(http, url, attempts=15, pause=3.0))
     extras, status = {}, {}
 
     def merge(values):
@@ -144,6 +145,43 @@ def fetch_extras(trade_date, *, http=None, get=None):
         except Exception as exc:
             status[name] = f'failed:{type(exc).__name__}'
     return extras, status
+
+
+SOURCE_FIELDS = {
+    'twse_flows': ('TWSE', ('foreign', 'trust', 'dealer')), 'tpex_flows': ('TPEX', ('foreign', 'trust', 'dealer')),
+    'twse_valuation': ('TWSE', ('pe', 'pb', 'dividend_yield')), 'tpex_valuation': ('TPEX', ('pe', 'pb', 'dividend_yield')),
+    'twse_industry': ('TWSE', ('industry',)), 'tpex_industry': ('TPEX', ('industry',)),
+}
+
+
+def read_saved_extras(day_dir):
+    """(extras by symbol, status) from an already saved snapshot, or ({}, {})."""
+    day_dir = Path(day_dir)
+    try:
+        status = json.loads((day_dir / 'manifest.json').read_text(encoding='utf-8')).get('extras') or {}
+        rows = read_csv(day_dir / 'extras.csv')
+    except (OSError, ValueError):
+        return {}, {}
+    extras = {}
+    for r in rows:
+        extras[r['symbol']] = {f: (r[f] or None) if f == 'industry' else num(r[f]) for f in EXTRA_FIELDS}
+    return extras, status
+
+
+def keep_previous(extras, status, previous, previous_status, market_of):
+    """For each source that failed now but succeeded in the saved snapshot, reuse the saved values."""
+    kept = []
+    for source, (market, fields) in SOURCE_FIELDS.items():
+        if status.get(source) == 'ok' or previous_status.get(source) != 'ok':
+            continue
+        for symbol, record in previous.items():
+            if market_of.get(symbol, market) == market:
+                values = {f: record.get(f) for f in fields if record.get(f) is not None}
+                if values:
+                    extras.setdefault(symbol, {}).update(values)
+        status[source] = 'ok'
+        kept.append(source)
+    return kept
 
 
 def extras_complete(status):

@@ -156,3 +156,27 @@ class PipelineIntegrationTests(unittest.TestCase):
             self.assertIn('## 法人資金流向', (archive / 'latest.md').read_text())
             state = run(None, output, ['2330'], fetch=fetch_for('1151022'), archive_root=archive, extras=extras_ok)
             self.assertEqual(state['reason'], 'already_saved')
+
+
+class KeepPreviousTests(unittest.TestCase):
+    def test_retry_keeps_sources_saved_earlier(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            archive, output = root / 'data', root / 'output'
+            fetch = lambda market: [twse(Date='1151021')] if market == 'TWSE' else [tpex(Date='1151021')]
+            good = {'2330': dict(industry='半導體業', pe=20.0, pb=5.0, dividend_yield=1.0,
+                                 foreign=1000.0, trust=10.0, dealer=-5.0)}
+
+            def first(day):
+                return {k: dict(v) for k, v in good.items()}, {'twse_flows': 'ok', 'twse_valuation': 'not_published'}
+
+            def second(day):
+                return ({'2330': dict(pe=21.0, pb=5.1, dividend_yield=1.1)},
+                        {'twse_flows': 'failed:RemoteError', 'twse_valuation': 'ok'})
+            run('2026-10-21', output, ['2330'], fetch=fetch, archive_root=archive, extras=first)
+            state = run('2026-10-21', output, ['2330'], fetch=fetch, archive_root=archive, extras=second)
+            self.assertEqual(state['extras_kept_from_saved'], ['twse_flows'])
+            self.assertTrue(state['extras_complete'])
+            saved, status = insights.read_saved_extras(archive / 'daily/2026-10-21')
+            self.assertEqual((saved['2330']['foreign'], saved['2330']['pe']), (1000.0, 21.0))
+            self.assertEqual(status, {'twse_flows': 'ok', 'twse_valuation': 'ok'})
