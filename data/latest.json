@@ -1,8 +1,8 @@
 {
-  "trade_date": "2026-11-06",
+  "trade_date": "2026-11-09",
   "analysis": "disabled",
   "snapshot_status": "complete",
   "demo": false,
-  "report_sha256": "96050bb45c5bb6bb61a173053a65d10c6e4328e966553cccdd8698e07ffbcc25",
+  "report_sha256": "a0f48884fb514ee70194159e84980abcf4f1918926a3a225aad99538b8fc205c",
   "extras_complete": true
 }
