@@ -232,12 +232,12 @@ def from_quotes(quotes):
 
 def screen_snapshot(quotes, names, **params):
     """Run snapshot screens on one day of pipeline quotes: {name: [Pick, ...]}."""
-    from .strategies import MarketView, get
+    from .strategies import MarketView, Screen, get
     view = MarketView(from_quotes(quotes), 0)
     out = {}
     for name in names:
         strategy = get(name, **params)
-        if strategy.lookback != 1 or strategy.needs_flows:
+        if not isinstance(strategy, Screen):
             raise ValueError(f'{name} needs history; it cannot run on a single snapshot')
         out[name] = strategy.select(view)
     return out
