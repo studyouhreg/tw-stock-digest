@@ -1,30 +1,95 @@
 """Human-readable factual reports, with no model required."""
+import datetime as dt
 
 
 def cell(value):
     return '—' if value is None else str(value).replace('|', '\\|').replace('\n', ' ')
 
 
+MARKET_NAMES = {'TWSE': '上市', 'TPEX': '上櫃'}
+
+
+def price(value):
+    return '—' if value is None else f'{value:,.2f}'.rstrip('0').rstrip('.')
+
+
+def percent(value):
+    return '—' if value is None else f'{value:+.2f}'
+
+
+def lots(shares):
+    return '—' if shares is None else f'{round(shares / 1000):,}'
+
+
+def ordered_markets(context):
+    return sorted(context['markets'].items(), key=lambda item: (item[0] != 'TWSE', item[0]))
+
+
+def headline(context):
+    """Short title and key points: the top of the digest and the notification."""
+    date = context['trade_date']
+    weekday = '一二三四五六日'[dt.date.fromisoformat(date).weekday()]
+    title, points = [f'臺股盤後 {date}（{weekday}）'], []
+    breadth = [f"{MARKET_NAMES.get(m, m)} {x['equities']['advancers']} 漲 {x['equities']['decliners']} 跌"
+               for m, x in ordered_markets(context)]
+    points.append('漲跌家數：' + '、'.join(breadth))
+    title.append(breadth[0])
+    insights = context.get('insights') or {}
+    market = (insights.get('institutions') or {}).get('market')
+    if market:
+        window = insights['institutions']['window_days']
+
+        def flow(label, key):
+            m = market[key]
+            detail = [streak_text(m['streak_days'])] if abs(m['streak_days']) > 1 else []
+            if window > 1:
+                detail.append(f"{window} 日累計 {signed(m['window_100m_twd'])} 億")
+            return f"{label} {signed(m['today_100m_twd'])} 億" + (f"（{'，'.join(detail)}）" if detail else '')
+        points.append('法人買賣超：' + '；'.join(flow(label, key) for label, key in
+                                              (('外資', 'foreign'), ('投信', 'trust'), ('自營商', 'dealer'))))
+        title.append(f"外資 {market['foreign']['today_100m_twd']:+,.0f} 億、投信 {market['trust']['today_100m_twd']:+,.0f} 億")
+    rotation = insights.get('rotation') or {}
+    if rotation.get('gaining') and rotation.get('losing'):
+        up, down = rotation['gaining'][0], rotation['losing'][0]
+        points.append(f"產業資金：流入最多 {up['industry']}（成交占比 {signed(up['share_change_pp'])} 個百分點），"
+                      f"流出最多 {down['industry']}（{signed(down['share_change_pp'])}）")
+    moves = sorted((q for q in context['watchlist'] if q['change_pct'] is not None),
+                   key=lambda q: -q['change_pct'])
+    if moves:
+        points.append('自選股：' + '、'.join(f"{q['name']} {percent(q['change_pct'])}%" for q in moves))
+    flow_counts = insights.get('money_flow') or {}
+    if flow_counts.get('volume_surge_up') or flow_counts.get('mfi_high') or flow_counts.get('mfi_low'):
+        points.append(f"量價：量增價漲 {len(flow_counts.get('volume_surge_up') or [])} 檔上榜；"
+                      f"MFI ≥ 80 有 {len(flow_counts.get('mfi_high') or [])} 檔上榜、"
+                      f"≤ 20 有 {len(flow_counts.get('mfi_low') or [])} 檔上榜")
+    return dict(title='｜'.join(title), points=points)
+
+
 def factual_report(context, demo=False):
     lines = [f"# 臺股盤後資料摘要 · {context['trade_date']}", '',
              '**合成示範資料，非實際行情。**' if demo else '以下數字由程式整理；尚未包含 Claude 分析。', '',
-             '| 市場 | 股票類筆數 | 上漲 | 下跌 | 平盤 | 漲跌缺值 | ETF 筆數 |',
-             '|---|---:|---:|---:|---:|---:|---:|']
-    for name, market in context['markets'].items():
+             '## 今日重點', ''] + ['- ' + point for point in headline(context)['points']]
+    lines.extend(['', '## 市場概況', '',
+                  '| 市場 | 股票類筆數 | 上漲 | 下跌 | 平盤 | 漲跌缺值 | ETF 筆數 |',
+                  '|---|---:|---:|---:|---:|---:|---:|'])
+    for name, market in ordered_markets(context):
         e = market['equities']
-        lines.append(f"| {name} | {e['count']} | {e['advancers']} | {e['decliners']} | {e['unchanged']} | {e['unknown_change_count']} | {market['etf_count']} |")
-    lines.extend(['', '## 自選清單', '', '| 市場 | 代碼 | 名稱 | 收盤 TWD | 價差 % | 成交股數 |',
+        lines.append(f"| {MARKET_NAMES.get(name, name)} | {e['count']} | {e['advancers']} | {e['decliners']} | {e['unchanged']} | {e['unknown_change_count']} | {market['etf_count']} |")
+    lines.extend(['', '## 自選清單', '', '| 市場 | 代碼 | 名稱 | 收盤 | 漲跌 % | 成交張數 |',
                   '|---|---|---|---:|---:|---:|'])
     for q in context['watchlist']:
-        lines.append('| ' + ' | '.join(cell(q[k]) for k in
-                      ('market', 'symbol', 'name', 'close', 'change_pct', 'volume_shares')) + ' |')
+        lines.append('| ' + ' | '.join(cell(v) for v in (
+            MARKET_NAMES.get(q['market'], q['market']), q['symbol'], q['name'], price(q['close']),
+            percent(q['change_pct']), lots(q['volume_shares']))) + ' |')
     if context['missing_watchlist']:
         lines.extend(['', '未取得：' + ', '.join(context['missing_watchlist'])])
     insights = context.get('insights')
     if insights:
         lines.extend(insight_sections(insights))
     lines.extend(['', '## 資料限制', ''] + ['- ' + x for x in context['limitations']])
-    lines.extend(['', '## 來源', ''] + [f"- {m}：{x['source']}" for m, x in context['markets'].items()])
+    lines.extend(['', '## 來源', ''] + [f"- {MARKET_NAMES.get(m, m)}：{x['source']}" for m, x in ordered_markets(context)])
+    if context.get('source_note'):
+        lines.append(f"- 備註：{context['source_note']}")
     return '\n'.join(lines) + '\n'
 
 
@@ -49,8 +114,9 @@ def insight_sections(insights):
     v = insights['valuation']
     lines += ['', '## 本益比與估值', '', '官方日報的本益比（近四季 EPS）、股價淨值比與殖利率；虧損公司無本益比。', '']
     lines += table(['市場', '本益比中位數', '淨值比中位數', '殖利率中位數 %', '有本益比', '無本益比（虧損等）'],
-                   [[m, x['median_pe'], x['median_pb'], x['median_dividend_yield'], x['with_pe'], x['without_pe']]
-                    for m, x in v['markets'].items()])
+                   [[MARKET_NAMES.get(m, m), x['median_pe'], x['median_pb'], x['median_dividend_yield'],
+                     x['with_pe'], x['without_pe']]
+                    for m, x in sorted(v['markets'].items(), key=lambda item: (item[0] != 'TWSE', item[0]))])
     if v['watchlist']:
         lines += ['', '自選清單：', '']
         lines += table(['代碼', '名稱', '產業', '本益比', '產業中位數', '股價淨值比', '殖利率 %'],
@@ -69,7 +135,7 @@ def insight_sections(insights):
     else:
         lines += [f'金額為買賣超股數 × 當日收盤價（億元，近似值）。累計期間為最近 {f["window_days"]} 個有法人資料的交易日。', '']
         lines += table(['市場', '外資', '投信', '自營商'],
-                       [[{'ALL': '合計'}.get(m, m), signed(x['foreign']), signed(x['trust']), signed(x['dealer'])]
+                       [[{'ALL': '合計', **MARKET_NAMES}.get(m, m), signed(x['foreign']), signed(x['trust']), signed(x['dealer'])]
                         for m, x in f['today_100m_twd'].items()])
         if len(f['foreign_series_100m_twd']) > 1:
             lines += ['', '外資逐日（億元）：' + '、'.join(

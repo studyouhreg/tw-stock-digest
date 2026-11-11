@@ -9,7 +9,8 @@ shape and runs the normal pipeline, so every validation step still applies.
 
 Differences from a live run, recorded in the manifest:
 - TPEx share volume and turnover exclude odd-lot trades (about 1-2% lower);
-- on TWSE ex-rights days the report gives no change, so change is left empty.
+- on TWSE ex-rights days the report gives no change; it is derived from the
+  exchange's reference price table (TWT49U), or left empty if that fails.
 """
 import argparse
 import datetime as dt
@@ -20,7 +21,7 @@ import re
 import sys
 import time
 
-from .http import HttpClient, persistent_json
+from .http import HttpClient, RemoteError, persistent_json
 from .insights import fetch_extras
 from .pipeline import run
 
@@ -29,7 +30,14 @@ URLS = {
     'TPEX': 'https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json',
 }
 NOTE = ('Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). '
-        'TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change.')
+        'TPEx volume and turnover exclude odd lots; TWSE ex-rights changes come from the reference price table.')
+
+
+EX_RIGHTS = 'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&startDate={d:%Y%m%d}&endDate={d:%Y%m%d}'
+
+
+class NoData(ValueError):
+    """The exchange has no report for this date: not a trading day, or not published yet."""
 
 
 def roc(day):
@@ -44,7 +52,7 @@ def plain(text):
 
 def twse_rows(data, day):
     if not data or data.get('stat') != 'OK':
-        raise ValueError('TWSE report has no data for this date')
+        raise NoData('TWSE report has no data for this date')
     table = next(t for t in data['tables'] if '證券代號' in (t.get('fields') or []))
     c = {name: i for i, name in enumerate(table['fields'])}
     rows = []
@@ -63,7 +71,7 @@ def twse_rows(data, day):
 def tpex_rows(data, day):
     tables = (data or {}).get('tables') or []
     if not tables or not tables[0].get('data'):
-        raise ValueError('TPEx report has no data for this date')
+        raise NoData('TPEx report has no data for this date')
     fields = [f.strip() for f in tables[0]['fields']]
     c = {name: i for i, name in enumerate(fields)}
     return [dict(Date=roc(day), SecuritiesCompanyCode=r[c['代號']].strip(), CompanyName=r[c['名稱']].strip(),
@@ -73,12 +81,36 @@ def tpex_rows(data, day):
             for r in tables[0]['data']]
 
 
+def fill_ex_rights(rows, data):
+    """Give ex-rights rows their change, from the official reference price table.
+
+    The per-date quote report marks ex-rights days with X and no change. The
+    exchange's own reference price (TWT49U) restores it: change = close - reference.
+    """
+    references = {str(r[1]).strip(): r[4] for r in (data or {}).get('data') or []}
+    filled = 0
+    for row in rows:
+        reference, close = plain(references.get(row['Code'], '')), row['ClosingPrice']
+        if row['Change'] == '' and re.fullmatch(r'\d+(\.\d+)?', reference) and re.fullmatch(r'\d+(\.\d+)?', close):
+            row['Change'] = f'{float(close) - float(reference):.2f}'
+            filled += 1
+    return filled
+
+
 def fetcher(day, *, http=None, sleep=time.sleep):
     http = http or HttpClient(timeout=60)
-    convert = {'TWSE': twse_rows, 'TPEX': tpex_rows}
 
     def fetch(market):
-        return convert[market](persistent_json(http, URLS[market].format(d=day), sleep=sleep), day)
+        data = persistent_json(http, URLS[market].format(d=day), sleep=sleep)
+        if market == 'TPEX':
+            return tpex_rows(data, day)
+        rows = twse_rows(data, day)
+        if any(row['Change'] == '' for row in rows):
+            try:
+                fill_ex_rights(rows, persistent_json(http, EX_RIGHTS.format(d=day), sleep=sleep))
+            except RemoteError:
+                pass  # the rows keep their missing-change flag
+        return rows
     return fetch
 
 

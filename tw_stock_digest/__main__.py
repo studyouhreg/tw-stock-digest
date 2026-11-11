@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import sys
 
+from .daily import collect_pending, exit_code
 from .demo import DEMO_DATE
 from .drive import Drive
 from .pipeline import run
@@ -16,6 +17,9 @@ SKIP_MESSAGES = {
     'already_saved': '來源最新交易日已完整保存，無新資料；',
     'older_than_saved': '來源回傳的交易日比已保存的還舊；',
     'markets_out_of_sync': '證交所與櫃買中心的最新快照不是同一個交易日（證交所隔天早上才更新），等下次排程；',
+    'not_published': '今天的逐日報表還沒公布，等下次排程；',
+    'no_trading': '交易所沒有這一天的資料（休市）；',
+    'source_unreachable': '來源暫時連不上，下次排程會再試；',
 }
 
 
@@ -31,7 +35,7 @@ def iso_date(value):
 def main():
     parser = argparse.ArgumentParser(description='臺股盤後收集 → GitHub／可選 Drive → 可選 Claude 摘要')
     parser.add_argument('--date', type=iso_date,
-                        help='嚴格驗證來源必須是此日期；省略時收集來源最新且尚未保存的交易日（不提供歷史回補）')
+                        help='只收集（或補回）這個交易日；省略時收集所有尚未保存的交易日')
     parser.add_argument('--output', type=Path, default=Path('output'))
     parser.add_argument('--repo-dir', type=Path, help='將整理後資料保存到 git 可追蹤目錄，例如 data')
     parser.add_argument('--watchlist', default=os.getenv('WATCHLIST', '0050,2330,2317,2454,6488'))
@@ -59,22 +63,46 @@ def main():
         drive = None if args.no_drive else Drive.from_env()
         return drive, config
 
-    try:
-        result = run(target, args.output, watchlist, demo=args.demo, archive_root=args.repo_dir,
-                     configure_remote=configure_remote, analysis_requested=enabled)
-    except Exception:
-        status_path = args.output / 'demo' / 'status.json' if args.demo else args.output / 'status.json'
-        print(f'Pipeline failed. Collected files and stage/error type are retained in {status_path}.', file=sys.stderr)
-        return 1
-    print(json.dumps(result, ensure_ascii=False))
-    summary = os.getenv('GITHUB_STEP_SUMMARY')
-    if summary:
-        with open(summary, 'a', encoding='utf-8') as handle:
-            handle.write(f"## 臺股資料工作：{result['status']}\n\n```json\n{json.dumps(result, ensure_ascii=False, indent=2)}\n```\n")
-            if result['status'] == 'skipped':
-                handle.write('\n' + SKIP_MESSAGES.get(result.get('reason'), '本次略過。')
-                             + '未執行 Claude、未更新 Drive。\n')
-    return 0
+    if args.demo:
+        try:
+            result = run(target, args.output, watchlist, demo=True)
+        except Exception:
+            print(f"Pipeline failed. Stage and error type are in {args.output / 'demo' / 'status.json'}.",
+                  file=sys.stderr)
+            return 1
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
+    summary = collect_pending(args.output, watchlist, archive_root=args.repo_dir,
+                              only=dt.date.fromisoformat(target) if target else None,
+                              analysis_requested=enabled, configure_remote=configure_remote)
+    print(json.dumps(summary, ensure_ascii=False))
+    for day in summary['days']:
+        if day['status'] == 'failed':
+            print(f"{day['trade_date']} failed at stage {day.get('stage')} ({day.get('error_type')}). "
+                  f"Collected files are retained in {args.output}.", file=sys.stderr)
+    step_summary = os.getenv('GITHUB_STEP_SUMMARY')
+    if step_summary:
+        with open(step_summary, 'a', encoding='utf-8') as handle:
+            handle.write(summary_markdown(summary))
+    return exit_code(summary)
+
+
+def summary_markdown(summary):
+    lines = ['## 臺股資料工作', '', f"來源快照日期：{summary['snapshot_dates'] or '無法取得'}；"
+             f"執行前最新已存：{summary['latest_saved'] or '無'}", '']
+    if not summary['days']:
+        lines.append('沒有待收集的交易日。')
+    else:
+        lines += ['| 交易日 | 結果 | 說明 |', '|---|---|---|']
+        for day in summary['days']:
+            if day['status'] == 'complete':
+                detail = f"{day.get('row_count')} 檔；法人與估值{'完整' if day.get('extras_complete') else '尚未齊全，下次排程補'}"
+            elif day['status'] == 'skipped':
+                detail = SKIP_MESSAGES.get(day.get('reason'), '略過')
+            else:
+                detail = SKIP_MESSAGES.get(day.get('reason')) or f"階段 {day.get('stage')}：{day.get('error_type')}"
+            lines.append(f"| {day['trade_date']} | {day['status']} | {detail} |")
+    return '\n'.join(lines) + '\n'
 
 
 if __name__ == '__main__':

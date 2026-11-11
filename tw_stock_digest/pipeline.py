@@ -79,25 +79,151 @@ def already_saved(record, trade_date, analysis_wanted):
     return not analysis_wanted or record.get('analysis') in FINISHED_ANALYSIS
 
 
+class Skip(Exception):
+    """End this run without an error; the fields explain why in the status."""
+
+    def __init__(self, reason, **fields):
+        super().__init__(reason)
+        self.fields = dict(reason=reason, **fields)
+
+
+def collect_quotes(fetch, output, state):
+    """Fetch and validate both markets, keeping each raw response as it arrives."""
+    for market in SOURCES:
+        (output / 'raw' / f'{market}.json').unlink(missing_ok=True)
+    quotes, raw, rejected = [], {}, []
+    for market in SOURCES:
+        data = fetch(market)
+        raw[market] = json_bytes(data)
+        write(output / 'raw' / f'{market}.json', raw[market])
+        state['fetched_markets'].append(market)
+        quotes.extend(normalize(market, data, rejected))
+    if rejected:
+        state['rejected_rows'] = [list(item) for item in rejected]
+    # TPEx publishes its snapshot the same evening, TWSE only the next
+    # morning, so for part of each day the two describe different trading
+    # days. That is not an error: skip and let a later run retry. (The
+    # scheduled collector in ``daily`` avoids this by reading TWSE's per-date
+    # report when its snapshot lags.)
+    market_dates = {q['market']: q['trade_date'] for q in quotes}
+    if len(set(market_dates.values())) > 1:
+        raise Skip('markets_out_of_sync', market_dates=market_dates)
+    return quotes, raw, rejected
+
+
+def check_target(trade_date, target_date, archive_root, output, state, analysis_wanted):
+    """Decide whether this source day should be collected now."""
+    if target_date is not None:
+        if trade_date < target_date:
+            raise Skip('stale_or_nontrading_day')
+        if trade_date > target_date:
+            raise ValueError('Latest snapshot is newer than requested date; historical backfill is unavailable')
+        return
+    if trade_date > dt.datetime.now(TAIPEI).date().isoformat():
+        raise ValueError('Source trade date is in the future')
+    saved = saved_latest(archive_root, output)
+    if saved is not None:
+        state['saved_date'] = saved['trade_date']
+    if saved is not None and trade_date < saved['trade_date']:
+        raise Skip('older_than_saved')
+    if already_saved(saved, trade_date, analysis_wanted):
+        raise Skip('already_saved')
+
+
+def enrich(context, quotes, extras, root, state, watchlist):
+    """Add flows, valuation and the computed insight sections to the context."""
+    trade_date = context['trade_date']
+    extra_rows, extra_status = extras(trade_date)
+    # A retry must not lose a source that an earlier save of this day already had.
+    kept = keep_previous(extra_rows, extra_status, *read_saved_extras(Path(root) / 'daily' / trade_date),
+                         {q['symbol']: q['market'] for q in quotes})
+    if kept:
+        state['extras_kept_from_saved'] = kept
+    state['extras'] = extra_status
+    state['extras_complete'] = extras_complete(extra_status)
+    history = load_history(root, trade_date)
+    context['insights'] = compute_insights(quotes, extra_rows, history, watchlist)
+    context['limitations'][0] = (
+        f'動能指標使用本專案已保存的最近 {len(history)} 個交易日；沒有新聞、財報、月營收或融資融券。')
+    return extra_rows, extra_status
+
+
+def snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo, sources, source_note):
+    """Everything written for the day before any optional service runs."""
+    trade_date, analysis_status = context['trade_date'], state['analysis']
+    # Invalidate the published view before overwriting the data it described.
+    # Successful paid results live separately in exact-input cache files.
+    core = {
+        'analysis.json': (json_bytes(dict(status=analysis_status, trade_date=trade_date)), 'application/json'),
+        'analysis.md': (f'# Claude 分析狀態 · {trade_date}\n\n本次資料尚無完成的 Claude 分析（{analysis_status}）；請以 facts.md 為準。\n'.encode(), 'text/markdown'),
+    }
+    core.update({f'raw_{market}.json': (data, 'application/json') for market, data in raw.items()})
+    core.update({
+        'quotes.csv': (quotes_csv(quotes), 'text/csv'),
+        'extras.csv': (extras_csv(extra_rows), 'text/csv'),
+        'context.json': (json_bytes(context), 'application/json'),
+        'claude-prompt.md': (make_prompt(context).encode(), 'text/markdown'),
+        'facts.md': (factual_report(context, demo).encode(), 'text/markdown'),
+    })
+    manifest = dict(schema_version=1, status='collected', trade_date=trade_date, demo=demo,
+                    captured_at_utc=state['captured_at_utc'], sources=sources or SOURCES,
+                    row_count=len(quotes),
+                    files_sha256={name: hashlib.sha256(data).hexdigest() for name, (data, _) in core.items()})
+    manifest['extras'] = extra_status
+    if source_note:
+        manifest['source_note'] = source_note
+    if state.get('rejected_rows'):
+        manifest['rejected_rows'] = state['rejected_rows']
+    core['manifest.json'] = (json_bytes(manifest), 'application/json')
+    return core, manifest
+
+
+def run_analysis(context, config, analyzer, day, drive, folder, archive_root, state):
+    """Reuse a cached result for exactly this input, or pay for one new analysis."""
+    trade_date, model, key = context['trade_date'], config['model'], config['key']
+    fingerprint = analysis_key(context, model)
+    cache_name = f'analysis-cache-{fingerprint}.json'
+    cached = drive.get(folder, cache_name) if drive else None
+    local_cache = day / cache_name
+    if cached is None and local_cache.exists():
+        cached = local_cache.read_bytes()
+    if cached is None and archive_root is not None:
+        repository_cache = Path(archive_root) / 'daily' / trade_date / cache_name
+        if repository_cache.exists():
+            cached = repository_cache.read_bytes()
+    previous = json.loads(cached) if cached is not None else {}
+    if isinstance(previous, dict) and previous.get('input_sha256') == fingerprint and previous.get('text'):
+        result = previous
+        state['analysis'] = 'cached'
+    else:
+        result = analyzer(context, model, key)
+        result['input_sha256'] = fingerprint
+        state['analysis'] = 'generated'
+    result['trade_date'] = trade_date
+    result['status'] = 'complete'
+    cache_content = json_bytes(result)
+    write(local_cache, cache_content)
+    if drive:
+        state['stage'] = 'upload_analysis'
+        drive.put(folder, cache_name, cache_content, 'application/json')
+    return result, fingerprint
+
+
 def run(target_date, output, watchlist, *, demo=False, drive=None,
         analysis_config=None, fetch=None, analyzer=analyze, archive_root=None,
         configure_remote=None, analysis_requested=False, sources=None, source_note=None,
         extras=None):
     """Collect one snapshot.
 
-    ``sources`` and ``source_note`` describe a non-default origin (backfill)
-    in the manifest and context; they do not change how data is fetched.
+    ``sources`` and ``source_note`` describe a non-default origin (per-date
+    reports) in the manifest and context; they do not change how data is fetched.
     ``extras(trade_date) -> (by symbol, status)`` supplies institutional flows,
     valuation and industries; a source that fails leaves its section empty
     and marks the day incomplete so a later scheduled run collects it again.
 
-    target_date=None (the scheduled default) accepts whatever trading day the
-    official snapshot currently reports, as long as it is newer than what is
-    already saved. Comparing against today's calendar date instead would skip
-    whenever the snapshot is not yet updated (GitHub schedule delays, a late
-    source update) and would lose that day for good, because the endpoint
-    cannot be backfilled. Holidays and closures simply find nothing new. A string
-    target_date keeps the strict check: the source must report exactly that day.
+    target_date=None accepts whatever trading day ``fetch`` reports, as long as
+    it is newer than what is already saved. A string target_date is strict:
+    the source must report exactly that day.
     """
     if target_date is not None:
         target_date = dt.date.fromisoformat(target_date).isoformat()
@@ -116,90 +242,33 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         extras = extras or fetch_extras
     # A caller-supplied fetch (tests, backfill) gets extras only if it asks for them.
     extras = extras or (lambda trade_date: ({}, {'extras': 'not_requested'}))
+    root = archive_root if archive_root is not None else output
     state = dict(status='running', stage='collect', expected_date=target_date, demo=demo,
                  captured_at_utc=dt.datetime.now(dt.timezone.utc).isoformat(),
                  archive='google_drive' if drive else 'local_only', analysis='disabled', fetched_markets=[])
     try:
-        for market in SOURCES:
-            (output / 'raw' / f'{market}.json').unlink(missing_ok=True)
-        quotes, raw = [], {}
-        for market in SOURCES:
-            data = fetch(market)
-            raw[market] = json_bytes(data)
-            write(output / 'raw' / f'{market}.json', raw[market])
-            state['fetched_markets'].append(market)
-            quotes.extend(normalize(market, data))
-        # TPEx publishes its snapshot the same evening, TWSE only the next
-        # morning, so for part of each day the two describe different trading
-        # days. That is not an error: skip and let a later scheduled run retry.
-        market_dates = {q['market']: q['trade_date'] for q in quotes}
-        if len(set(market_dates.values())) > 1:
-            state.update(status='skipped', reason='markets_out_of_sync', market_dates=market_dates)
-            return state
+        quotes, raw, rejected = collect_quotes(fetch, output, state)
         context = build_context(quotes, watchlist)
         if sources:
             for market, info in context['markets'].items():
                 info['source'] = sources[market]
+        if source_note:
+            context['source_note'] = source_note
+        if rejected:
+            context['rejected_rows'] = [list(item) for item in rejected]
+            context['limitations'].append(
+                '因數值無法解析或開高低收不一致而排除：' + '、'.join(f'{m} {s}' for m, s, _ in rejected))
         trade_date = context['trade_date']
         state['source_date'] = trade_date
-        if target_date is not None:
-            if trade_date < target_date:
-                state.update(status='skipped', reason='stale_or_nontrading_day')
-                return state
-            if trade_date > target_date:
-                raise ValueError('Latest snapshot is newer than requested date; historical backfill is unavailable')
-        else:
-            if trade_date > dt.datetime.now(TAIPEI).date().isoformat():
-                raise ValueError('Source trade date is in the future')
-            saved = saved_latest(archive_root, output)
-            if saved is not None:
-                state['saved_date'] = saved['trade_date']
-            if saved is not None and trade_date < saved['trade_date']:
-                state.update(status='skipped', reason='older_than_saved')
-                return state
-            if already_saved(saved, trade_date, bool(analysis_config or analysis_requested)):
-                state.update(status='skipped', reason='already_saved')
-                return state
+        check_target(trade_date, target_date, archive_root, output, state,
+                     bool(analysis_config or analysis_requested))
         state['stage'] = 'collect_extras'
-        extra_rows, extra_status = extras(trade_date)
-        # A retry must not lose a source that an earlier save of this day already had.
-        saved_root = archive_root if archive_root is not None else output
-        kept = keep_previous(extra_rows, extra_status, *read_saved_extras(Path(saved_root) / 'daily' / trade_date),
-                             {q['symbol']: q['market'] for q in quotes})
-        if kept:
-            state['extras_kept_from_saved'] = kept
-        state['extras'] = extra_status
-        state['extras_complete'] = extras_complete(extra_status)
-        history = load_history(archive_root if archive_root is not None else output, trade_date)
-        context['insights'] = compute_insights(quotes, extra_rows, history, watchlist)
-        context['limitations'][0] = (
-            f'動能指標使用本專案已保存的最近 {len(history)} 個交易日；沒有新聞、財報、月營收或融資融券。')
+        extra_rows, extra_status = enrich(context, quotes, extras, root, state, watchlist)
         state['stage'] = 'write_collection'
         day = output / 'daily' / trade_date
-        analysis_status = 'pending' if analysis_config or analysis_requested else 'disabled'
-        state['analysis'] = analysis_status
-        # Invalidate the published view before overwriting the data it described.
-        # Successful paid results live separately in exact-input cache files.
-        core = {
-            'analysis.json': (json_bytes(dict(status=analysis_status, trade_date=trade_date)), 'application/json'),
-            'analysis.md': (f'# Claude 分析狀態 · {trade_date}\n\n本次資料尚無完成的 Claude 分析（{analysis_status}）；請以 facts.md 為準。\n'.encode(), 'text/markdown'),
-        }
-        core.update({f'raw_{market}.json': (data, 'application/json') for market, data in raw.items()})
-        core.update({
-            'quotes.csv': (quotes_csv(quotes), 'text/csv'),
-            'extras.csv': (extras_csv(extra_rows), 'text/csv'),
-            'context.json': (json_bytes(context), 'application/json'),
-            'claude-prompt.md': (make_prompt(context).encode(), 'text/markdown'),
-            'facts.md': (factual_report(context, demo).encode(), 'text/markdown'),
-        })
-        manifest = dict(schema_version=1, status='collected', trade_date=trade_date, demo=demo,
-                        captured_at_utc=state['captured_at_utc'], sources=sources or SOURCES,
-                        row_count=len(quotes),
-                        files_sha256={name: hashlib.sha256(data).hexdigest() for name, (data, _) in core.items()})
-        manifest['extras'] = extra_status
-        if source_note:
-            manifest['source_note'] = source_note
-        core['manifest.json'] = (json_bytes(manifest), 'application/json')
+        state['analysis'] = analysis_status = 'pending' if analysis_config or analysis_requested else 'disabled'
+        core, manifest = snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo,
+                                        sources, source_note)
         for name, (content, _) in core.items():
             write(day / name, content)
         state['row_count'] = len(quotes)
@@ -220,34 +289,11 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             folder = drive.folder(drive.root, trade_date)
             for name, (content, mime) in core.items():
                 drive.put(folder, name, content, mime)
+        fingerprint = None
         if analysis_config:
             state['stage'] = 'analyze'
-            model, key = analysis_config['model'], analysis_config['key']
-            fingerprint = analysis_key(context, model)
-            cache_name = f'analysis-cache-{fingerprint}.json'
-            cached = drive.get(folder, cache_name) if drive else None
-            local_cache = day / cache_name
-            if cached is None and local_cache.exists():
-                cached = local_cache.read_bytes()
-            if cached is None and archive_root is not None:
-                repository_cache = Path(archive_root) / 'daily' / trade_date / cache_name
-                if repository_cache.exists():
-                    cached = repository_cache.read_bytes()
-            previous = json.loads(cached) if cached is not None else {}
-            if isinstance(previous, dict) and previous.get('input_sha256') == fingerprint and previous.get('text'):
-                result = previous
-                state['analysis'] = 'cached'
-            else:
-                result = analyzer(context, model, key)
-                result['input_sha256'] = fingerprint
-                state['analysis'] = 'generated'
-            result['trade_date'] = trade_date
-            result['status'] = 'complete'
-            cache_content = json_bytes(result)
-            write(local_cache, cache_content)
-            if drive:
-                state['stage'] = 'upload_analysis'
-                drive.put(folder, cache_name, cache_content, 'application/json')
+            result, fingerprint = run_analysis(context, analysis_config, analyzer, day, drive, folder,
+                                               archive_root, state)
             analysis_text = f"# Claude 盤後分析 · {trade_date}\n\n{result['text']}\n"
             for name, content, mime in (
                 ('analysis.json', json_bytes(result), 'application/json'),
@@ -272,7 +318,7 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             drive.put(drive.root, 'latest.md', report, 'text/markdown')
             drive.put(drive.root, 'latest.json', latest, 'application/json')
         manifest.update(status='complete', analysis=state['analysis'])
-        if analysis_config:
+        if fingerprint:
             manifest['analysis_input_sha256'] = fingerprint
         write(day / 'manifest.json', json_bytes(manifest))
         if archive_root is not None:
@@ -281,6 +327,9 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         if drive:
             drive.put(folder, 'manifest.json', json_bytes(manifest), 'application/json')
         state.update(status='complete', stage='done')
+        return state
+    except Skip as skip:
+        state.update(status='skipped', **skip.fields)
         return state
     except Exception as exc:
         state.update(status='failed', error_type=type(exc).__name__)

@@ -327,6 +327,23 @@ def institutions(days, watchlist, top=10):
         dict(date=d['date'], foreign=to_100m(sum(amount(r, 'foreign') or 0 for r in d['rows'].values())),
              trust=to_100m(sum(amount(r, 'trust') or 0 for r in d['rows'].values()))) for d in window]
 
+    def total(day, field):
+        return sum(amount(r, field) or 0 for r in day['rows'].values())
+
+    def market_streak(field):
+        count, sign = 0, 0
+        for day in reversed(flow_days):
+            value = total(day, field)
+            current = (value > 0) - (value < 0)
+            if current == 0 or (sign and current != sign):
+                break
+            sign, count = current, count + 1
+        return sign * count
+
+    out['market'] = {f: dict(today_100m_twd=totals['ALL'][f],
+                             window_100m_twd=to_100m(sum(total(d, f) for d in window)),
+                             streak_days=market_streak(f)) for f in ('foreign', 'trust', 'dealer')}
+
     def cumulative(symbol, field):
         values = [amount(d['rows'].get(symbol, {}), field) for d in window]
         return sum(v for v in values if v is not None) if any(v is not None for v in values) else None

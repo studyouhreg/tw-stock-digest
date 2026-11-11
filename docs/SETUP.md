@@ -83,7 +83,7 @@ gh secret set GDRIVE_FOLDER_ID
 
 若工具已保存憑證、卻在建立 Drive 資料夾時因網路失敗中斷，目前也需要使用新的 `--output` 檔名重新授權；不能直接以同一輸出檔名續跑。
 
-6. 再次手動執行 workflow，將 `demo` 取消勾選。若來源最新交易日已保存，結果會是 skipped（`already_saved`）；待來源更新後再跑即可。確認 Drive 出現交易日期資料夾及 `latest.md`。
+6. 再次手動執行 workflow，將 `demo` 取消勾選。若最新交易日已保存，結果會是「沒有待收集的交易日」。確認 Drive 出現交易日期資料夾及 `latest.md`。
 
 ## 3. 啟用 Claude 自動分析
 
@@ -109,18 +109,30 @@ CLI 範例：
 python -m tw_stock_digest --no-drive --watchlist 0050,2330,6488
 ```
 
-不指定日期時（排程預設），程式收集來源目前回報的交易日，只要它比 `data/latest.json` 更新，或同日資料尚未完整保存（例如上次 Drive／分析失敗）。已完整保存則 skipped（`already_saved`），不重複提交。
+不指定日期時（排程預設），程式收集所有待收集的交易日：最近 7 天內尚未保存的平日（今天要過 14:30 才會嘗試），以及最新一天若法人／估值尚未齊全會重收。每一天的行情，來源快照剛好是那天就用快照，否則改讀交易所的逐日報表。沒有待收集的日子時不產生提交。
 
-`--date YYYY-MM-DD`／Actions 的 `expected_date` 改為嚴格驗證：來源日期必須剛好是指定日期，較舊則 skipped，較新則失敗。來源一旦更新為較新日期，無法用這個參數取得更早資料。
+`--date YYYY-MM-DD`／Actions 的 `expected_date` 只收集（或重收）指定的那一天，來源選擇規則相同。
+
+每次執行的結果寫在 `output/run.json`（Actions artifact 與執行摘要都看得到），逐日列出 `complete`、`skipped`（附原因）或 `failed`（附階段與錯誤類型）。
+
+## 4a. GitHub 推播
+
+Workflow 最後一步 `python -m tw_stock_digest.notify` 用內建的 `GITHUB_TOKEN`（需要 `issues: write`，workflow 已設定）：
+
+- 最新交易日的摘要開成一則 issue（label `digest`），@ 儲存庫擁有者。法人與估值齊全才發；隔天 07:00 仍不齊也會發並註明。
+- 交易日到隔天中午仍收集失敗時開一則警示 issue（label `digest-alert`），補齊後自動留言並關閉。
+- 要收到手機推播：安裝 GitHub Mobile、登入，並在 GitHub 的 Settings → Notifications 確認 「Participating, @mentions」有勾選 Push／Email。
+- 停用：新增 repository variable `NOTIFY_ISSUES`，值為 `false`。
 
 ## 5. 失敗排查
 
 | 情況 | 處理 |
 |---|---|
-| `status=skipped`，`reason=already_saved` | 正常：來源尚未出現新交易日，下一次排程會再檢查 |
-| `status=skipped`，`reason=markets_out_of_sync` | 正常：晚上櫃買中心已更新、證交所要隔天早上才更新；隔天早上的排程會收集 |
-| `status=skipped`，`reason=stale_or_nontrading_day` | 只在指定 `--date` 時出現；來源尚未更新到該日，可能休市或延遲 |
-| `status=skipped`，`reason=older_than_saved` | 來源回傳比已保存更舊的日期，通常是來源暫時異常，稍後重跑 |
+| 沒有待收集的交易日 | 正常：最新交易日已完整保存 |
+| `skipped`，`reason=not_published` | 正常：今天的逐日報表還沒公布，下一個時段會再試 |
+| `skipped`，`reason=no_trading` | 正常：交易所沒有這一天的資料（颱風等臨時休市） |
+| `failed`，`reason=source_unreachable` | 交易所暫時連不上；不算失敗，下一個時段自動重試，隔天中午仍未存到會開警示 issue |
+| `skipped`，`reason=stale_or_nontrading_day`／`markets_out_of_sync`／`older_than_saved` | 只在直接呼叫 `pipeline.run` 時出現；排程收集不會產生 |
 | `stage=configuration` | 檢查兩個 Drive secrets 是否完整；OAuth 是否到期；是否開啟分析卻沒有 key |
 | `stage=collect` | 下載 artifact 查看已收集的 raw；可能是 HTTP 限流、欄位異動、OHLC 或日期不一致 |
 | `stage=upload_collection` | 檢查 Drive API 是否啟用、資料夾是否由本 app 建立、儲存容量與 OAuth scope |

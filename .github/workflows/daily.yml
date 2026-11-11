@@ -2,12 +2,15 @@ name: Taiwan stock digest
 
 on:
   schedule:
-    # 08:17, 13:17 and 19:17 Asia/Taipei (UTC+8), every day. TPEx updates its
-    # snapshot the same evening but TWSE only the next morning, so the two
-    # agree only from morning to evening; GitHub also delays runs by hours.
-    # Runs that find nothing new, or markets out of sync, commit nothing.
-    # GitHub may delay scheduled jobs.
-    - cron: '17 0,5,11 * * *'
+    # Asia/Taipei 17:47, 19:17, 21:17, 23:17, then 08:17 and 13:17 the next day.
+    # The exchanges' per-date reports are out by late afternoon, so the first
+    # evening run that actually starts collects the day; the later ones fill
+    # in anything published late and recover days an earlier run missed.
+    # GitHub starts scheduled runs hours late and drops some, hence several
+    # slots. A run with nothing to do commits nothing and takes seconds.
+    - cron: '47 9 * * *'
+    - cron: '17 11,13,15 * * *'
+    - cron: '17 0,5 * * *'
   workflow_dispatch:
     inputs:
       demo:
@@ -15,7 +18,7 @@ on:
         type: boolean
         default: true
       expected_date:
-        description: 'Optional YYYY-MM-DD to validate the latest source snapshot (not backfill)'
+        description: 'Optional YYYY-MM-DD: collect (or re-collect) exactly this trading day'
         type: string
         required: false
 
@@ -30,9 +33,10 @@ jobs:
   digest:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: write
+      issues: write
     env:
       DEMO: ${{ github.event_name == 'workflow_dispatch' && inputs.demo && 'true' || 'false' }}
     steps:
@@ -60,6 +64,11 @@ jobs:
       - name: Commit validated data even if an optional service failed
         if: ${{ !cancelled() && env.DEMO != 'true' }}
         run: bash scripts/commit_data.sh
+      - name: Push the digest and any collection problem as GitHub issues
+        if: ${{ !cancelled() && env.DEMO != 'true' && (vars.NOTIFY_ISSUES || 'true') == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m tw_stock_digest.notify --repo-dir data --run output/run.json
       - name: Retain collection even when analysis or Drive fails
         if: always()
         uses: actions/upload-artifact@v7
