@@ -48,11 +48,23 @@ def number(value, *, integer=False, nonnegative=False):
     return int(n) if integer else float(n)
 
 
-def normalize(market, rows):
+MAX_REJECTED_SHARE = 0.005
+
+
+def normalize(market, rows, rejected=None):
+    """Validate and normalize one market's rows.
+
+    A structural problem (wrong schema, duplicate symbols, nothing usable)
+    always raises. A single security with unusable numbers or inconsistent
+    prices raises too, unless the caller passes a ``rejected`` list: then that
+    security is left out and recorded there as (symbol, reason), so one bad
+    row does not cost the whole market's day. More than 0.5% bad rows (at
+    least 3) still raises, because that points at the source, not at a row.
+    """
     if market not in FIELDS or not isinstance(rows, list) or not rows:
         raise ValueError('Empty or invalid market response')
     mapping = FIELDS[market]
-    quotes, seen = [], set()
+    quotes, seen, bad = [], set(), []
     for row in rows:
         if not isinstance(row, dict) or mapping['symbol'] not in row:
             raise ValueError(f'{market}: missing symbol schema')
@@ -70,22 +82,32 @@ def normalize(market, rows):
         seen.add(symbol)
         q = dict(market=market, trade_date=parse_date(row['Date']), symbol=symbol,
                  name=str(row[mapping['name']]), kind=kind, quality_flags=[])
-        for field in ('open', 'high', 'low', 'close', 'change', 'volume_shares', 'turnover_twd', 'trades'):
-            q[field] = number(row[mapping[field]], integer=field in ('volume_shares', 'trades'),
-                              nonnegative=field != 'change')
+        try:
+            for field in ('open', 'high', 'low', 'close', 'change', 'volume_shares', 'turnover_twd', 'trades'):
+                q[field] = number(row[mapping[field]], integer=field in ('volume_shares', 'trades'),
+                                  nonnegative=field != 'change')
+            if q['high'] is not None and q['low'] is not None:
+                if q['high'] < q['low'] or any(q[f] is not None and not q['low'] <= q[f] <= q['high']
+                                             for f in ('open', 'close')):
+                    raise ValueError(f'{market}: inconsistent OHLC for {symbol}')
+        except ValueError as exc:
+            if rejected is None:
+                raise
+            bad.append((symbol, 'inconsistent_ohlc' if 'OHLC' in str(exc) else 'invalid_number'))
+            continue
         if q['close'] is None:
             q['quality_flags'].append('missing_close')
         if q['change'] is None:
             q['quality_flags'].append('missing_or_corporate_action_change')
-        if q['high'] is not None and q['low'] is not None:
-            if q['high'] < q['low'] or any(q[f] is not None and not q['low'] <= q[f] <= q['high']
-                                         for f in ('open', 'close')):
-                raise ValueError(f'{market}: inconsistent OHLC for {symbol}')
         reference = q['close'] - q['change'] if q['close'] is not None and q['change'] is not None else None
         q['change_pct'] = round(100 * q['change'] / reference, 4) if reference and reference > 0 else None
         quotes.append(q)
     if not quotes:
         raise ValueError(f'{market}: no supported securities')
+    if len(bad) > max(3, MAX_REJECTED_SHARE * (len(quotes) + len(bad))):
+        raise ValueError(f'{market}: {len(bad)} securities failed validation')
+    if rejected is not None:
+        rejected.extend((market,) + item for item in bad)
     return sorted(quotes, key=lambda q: q['symbol'])
 
 

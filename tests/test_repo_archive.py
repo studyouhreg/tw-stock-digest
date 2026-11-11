@@ -88,7 +88,7 @@ class RepositoryArchiveTests(unittest.TestCase):
         with patch('sys.argv', args), patch.dict(os.environ, env, clear=True), \
                 patch('tw_stock_digest.pipeline.HttpClient.json',
                       side_effect=lambda method, url, **kwargs: fetch_demo(markets[url])), \
-                patch('tw_stock_digest.pipeline.fetch_extras', side_effect=offline_extras), \
+                patch('tw_stock_digest.daily.fetch_extras', side_effect=offline_extras), \
                 patch('tw_stock_digest.__main__.Drive.from_env', side_effect=configure), \
                 patch('sys.stdout', new_callable=io.StringIO), patch('sys.stderr', new_callable=io.StringIO):
             return main()
@@ -226,9 +226,11 @@ class RepositoryArchiveTests(unittest.TestCase):
         markets = {url: market for market, url in SOURCES.items()}
         args = ['tw_stock_digest', '--output', str(self.output), '--repo-dir', str(self.archive), '--no-drive']
         with patch('sys.argv', args), patch.dict(os.environ, {}, clear=True), \
-                patch('tw_stock_digest.pipeline.HttpClient.json',
-                      side_effect=lambda method, url, **kwargs: fetch_demo(markets[url])), \
-                patch('tw_stock_digest.pipeline.fetch_extras', side_effect=offline_extras), \
+                patch('tw_stock_digest.pipeline.HttpClient.json', side_effect=lambda method, url, **kwargs: (
+                    fetch_demo(markets[url]) if url in markets else {'stat': '很抱歉，沒有符合條件的資料!'})), \
+                patch('tw_stock_digest.daily.fetch_extras', side_effect=offline_extras), \
+                patch('tw_stock_digest.daily.current_time',
+                      return_value=dt.datetime.fromisoformat(DEMO_DATE + 'T20:00:00+08:00')), \
                 patch('sys.stdout', new_callable=io.StringIO):
             self.assertEqual(main(), 0)
         self.assertTrue((self.archive / 'daily' / DEMO_DATE / 'quotes.csv').exists())
