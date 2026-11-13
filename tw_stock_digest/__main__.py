@@ -10,6 +10,7 @@ from .daily import collect_patiently, collect_pending, exit_code, live_sources
 from .demo import DEMO_DATE
 from .drive import Drive
 from .pipeline import run
+from .report import pending_groups
 
 
 SKIP_MESSAGES = {
@@ -100,8 +101,7 @@ def summary_markdown(summary):
         lines += ['| 交易日 | 結果 | 說明 |', '|---|---|---|']
         for day in summary['days']:
             if day['status'] == 'complete':
-                pending = [name for name, v in (day.get('extras') or {}).items()
-                           if v not in ('ok', 'demo', 'not_requested', 'unavailable')]
+                pending = pending_groups(day.get('extras') or {})
                 detail = f"{day.get('row_count')} 檔；" + (
                     '法人、估值與輔助資料完整' if not pending else '尚未齊全，下次排程補：' + '、'.join(pending))
             elif day['status'] == 'skipped':

@@ -21,7 +21,7 @@ import sys
 from zoneinfo import ZoneInfo
 
 from .http import HttpClient, RemoteError
-from .report import headline
+from .report import headline, pending_groups
 
 API = 'https://api.github.com'
 TAIPEI = ZoneInfo('Asia/Taipei')
@@ -86,8 +86,9 @@ def digest_issue(archive, day, *, owner, file_base):
     lines = ['**今日重點**', ''] + ['- ' + point for point in head['points']]
     links = [f'[完整摘要]({file_base}/{day}/facts.md)', f'[行情 CSV]({file_base}/{day}/quotes.csv)']
     lines += ['', '｜'.join(links) + (f'｜cc @{owner}' if owner else '')]
-    if not all(v in ('ok', 'demo', 'not_requested', 'unavailable') for v in (manifest.get('extras') or {}).values()):
-        lines += ['', '> 部分法人或估值資料在收集時尚未公布，相關段落可能空白。']
+    pending = pending_groups(manifest.get('extras') or {})
+    if pending:
+        lines += ['', f"> 收集時尚未公布：{'、'.join(pending)}。之後的排程補到資料時會直接更新這則 issue。"]
     if manifest.get('analysis') in FINISHED_ANALYSIS:
         analysis = (folder / 'analysis.md').read_text(encoding='utf-8')
         lines += ['', '---', '', analysis.split('\n', 1)[1].strip() if analysis.startswith('# ') else analysis.strip()]

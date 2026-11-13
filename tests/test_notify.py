@@ -82,6 +82,39 @@ class NotifyTests(unittest.TestCase):
         self.assertEqual(self.sync(self.collect(day), '2026-10-22T08:20'), ['digest_updated:2026-10-21'])
         self.assertNotIn('尚未公布', self.digests()[0]['body'])
 
+    def test_late_sources_do_not_hold_the_push_back_and_are_named(self):
+        day = dt.date(2026, 10, 21)
+
+        def collect(margin):
+            def auxiliary(trade_date, watchlist):
+                index = dict(taiex=dict(close=20000.0, change=100.0, change_pct=0.5), sectors=[])
+                payloads = {'twse_index': index, **({'twse_margin': dict(margin_twd=3e11, margin_change_twd=1e9)} if margin else {})}
+                return {}, payloads, {'twse_index': 'ok', 'tpex_index': 'ok', 'twse_margin': 'ok' if margin else 'not_published'}
+            snapshot = lambda market: [twse(Date=roc(day))] if market == 'TWSE' else [tpex(Date=roc(day))]
+            extras = lambda trade_date: ({'2330': dict(pe=20.0, foreign=1000.0, trust=0.0, dealer=0.0)}, {'all': 'ok'})
+            return collect_pending(self.root / 'output', ['2330'], archive_root=self.archive, only=day,
+                                   snapshot=snapshot, report=None, extras=extras, auxiliary=auxiliary)
+        self.assertEqual(self.sync(collect(False), '2026-10-21T18:00'), ['digest_created:2026-10-21'])
+        (issue,) = self.digests()
+        self.assertIn('｜加權 20,000（+0.50%）｜', issue['title'])
+        self.assertIn('> 收集時尚未公布：融資融券。', issue['body'])
+        self.assertLess(issue['body'].index('## 大盤與類股'), issue['body'].index('## 市場概況'))
+        self.assertEqual(issue['body'].count('今日重點'), 1)
+        self.assertEqual(self.sync(collect(True), '2026-10-21T21:30'), ['digest_updated:2026-10-21'])
+        (issue,) = self.digests()
+        self.assertNotIn('尚未公布', issue['body'])
+        self.assertIn('## 融資融券與借券', issue['body'])
+
+    def test_overlong_digest_is_cut_at_a_section_and_links_to_the_rest(self):
+        from unittest.mock import patch
+        from tw_stock_digest import notify
+        self.collect(dt.date(2026, 10, 21))
+        with patch.object(notify, 'BODY_LIMIT', 900):
+            _, body = notify.digest_issue(self.archive, '2026-10-21', owner='octocat', file_base='https://x/daily')
+        self.assertLess(len(body), 1000)
+        self.assertTrue(body.rstrip().endswith('（內容過長，其餘段落請看上方「完整摘要」連結。）'))
+        self.assertIn('**今日重點**', body)
+
     def test_existing_archive_without_an_issue_gets_one(self):
         self.collect(dt.date(2026, 10, 21))
         self.assertEqual(self.sync(dict(days=[]), '2026-10-22T08:00'), ['digest_created:2026-10-21'])

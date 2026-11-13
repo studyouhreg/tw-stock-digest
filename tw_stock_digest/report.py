@@ -25,6 +25,23 @@ def ordered_markets(context):
     return sorted(context['markets'].items(), key=lambda item: (item[0] != 'TWSE', item[0]))
 
 
+SETTLED = ('ok', 'demo', 'not_requested', 'unavailable')
+SOURCE_GROUPS = (('法人買賣超', ('twse_flows', 'tpex_flows')), ('本益比', ('twse_valuation', 'tpex_valuation')),
+                 ('產業別', ('twse_industry', 'tpex_industry')), ('大盤指數', ('twse_index', 'twse_turnover', 'tpex_index')),
+                 ('期貨籌碼', ('taifex_futures', 'taifex_pcr', 'taifex_large')), ('融資融券', ('twse_margin', 'tpex_margin')),
+                 ('借券', ('twse_sbl', 'tpex_sbl')), ('當沖', ('twse_daytrade', 'tpex_daytrade')),
+                 ('注意與處置股', ('twse_notice', 'tpex_notice', 'twse_punish', 'tpex_punish')),
+                 ('重大訊息', ('mops_material',)), ('月營收', ('twse_revenue', 'tpex_revenue')),
+                 ('除權息預告', ('twse_exright', 'tpex_exright')), ('大戶持股', ('tdcc',)),
+                 ('法人與估值', ('extras', 'all')))
+
+
+def pending_groups(status):
+    """Reader-facing names of the data groups that had not arrived when the day was collected."""
+    return [label for label, sources in SOURCE_GROUPS
+            if any(status.get(source, 'ok') not in SETTLED for source in sources)]
+
+
 def headline(context):
     """Short title and key points: the top of the digest and the notification."""
     date = context['trade_date']
