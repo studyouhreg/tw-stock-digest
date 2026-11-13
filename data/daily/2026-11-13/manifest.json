@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-11-13",
   "demo": false,
-  "captured_at_utc": "2026-11-13T11:16:52.334070+00:00",
+  "captured_at_utc": "2026-11-13T11:25:53.413799+00:00",
   "sources": {
     "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date=20261113&type=ALLBUT0999&response=json",
     "TPEX": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "b5cdb35c7e03708c80452973e5217fe345950f2a559cb6cfe620f02cef98e365",
     "analysis.md": "fe699ad42b5fe38d6bee6705724e0e863161d13f1481ebb20c5d7df2c799b41f",
-    "claude-prompt.md": "f6d0b0408031fb7e82246d440e4e4b57896bba94050665349c108e92ca9b90d9",
-    "context.json": "dfdbe056e7ca1ff4a4dfdea505458896fdb45b255ccd41e915bed36762041768",
+    "claude-prompt.md": "71afe4cf7a4564c299e0c22d2897d8fece48436584d775c3a2839d97c12bfa18",
+    "context.json": "a9e6d15402fa041b0cb55eec4558532ffa54ce9962821e8aefd88c9ce70c19c1",
     "extras.csv": "2b519c050c88af4a7ba8eeca307dfc020dfe4b03b017a261d2d017d22b67c3fd",
-    "facts.md": "88abc54e6374f25542f8f6ac4da0fc1fc3965841db61edb36e4eba3b66c16a09",
+    "facts.md": "eac3ba3d621938ede5a1b7ccd3e5b18a27aa83275de2388e9eabf9d164de8954",
     "quotes.csv": "ccf0ab4ee2456264121f5a8368cd74a6b5a29e16b9ef915ecd119b8fd754a172"
   },
   "extras": {
@@ -59,9 +59,9 @@
     "raw_TPEX.json": "9d2888721a03e990b9f0beb7050cc89cf90946124946a4de8f97a92ffa083f65",
     "quotes.csv": "ccf0ab4ee2456264121f5a8368cd74a6b5a29e16b9ef915ecd119b8fd754a172",
     "extras.csv": "2b519c050c88af4a7ba8eeca307dfc020dfe4b03b017a261d2d017d22b67c3fd",
-    "context.json": "dfdbe056e7ca1ff4a4dfdea505458896fdb45b255ccd41e915bed36762041768",
-    "claude-prompt.md": "f6d0b0408031fb7e82246d440e4e4b57896bba94050665349c108e92ca9b90d9",
-    "facts.md": "88abc54e6374f25542f8f6ac4da0fc1fc3965841db61edb36e4eba3b66c16a09"
+    "context.json": "a9e6d15402fa041b0cb55eec4558532ffa54ce9962821e8aefd88c9ce70c19c1",
+    "claude-prompt.md": "71afe4cf7a4564c299e0c22d2897d8fece48436584d775c3a2839d97c12bfa18",
+    "facts.md": "eac3ba3d621938ede5a1b7ccd3e5b18a27aa83275de2388e9eabf9d164de8954"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }

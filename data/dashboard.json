@@ -1,0 +1,1552 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-11-13T11:26:34+00:00",
+  "latest": "2026-11-13",
+  "window_days": 5,
+  "headline": {
+    "title": "臺股盤後 2026-11-13（五）｜加權 43,675（+1.35%）｜外資 +324 億、投信 +70 億",
+    "points": [
+      "大盤：加權指數 43,675.12（+583.25，+1.35%），成交金額 9,516 億；櫃買指數 342.41（+1.99%）",
+      "漲跌家數：上市 812 漲 200 跌、上櫃 584 漲 230 跌",
+      "法人買賣超：外資 +323.86 億（連買 2 日，5 日累計 -926.08 億）；投信 +69.83 億（連買 24 日，5 日累計 +1,128.28 億）；自營商 +70.01 億（5 日累計 -379.13 億）",
+      "期貨：外資臺股期貨淨空單 100,870 口（較前一交易日增加 1,297 口）；Put/Call 未平倉比 57.75%",
+      "產業資金：流入最多 玻璃陶瓷（成交占比 +2.33 個百分點），流出最多 半導體業（-2.59）",
+      "自選股：聯發科 +7.01%、元大台灣50 +1.54%、環球晶 +1.29%、台積電 +0.43%、鴻海 +0.42%",
+      "量價：量增價漲 10 檔上榜；MFI ≥ 80 有 10 檔上榜、≤ 20 有 5 檔上榜",
+      "技術面：28.4% 的股票站上 20 日均線；創 20 日新高 77 檔、新低 39 檔",
+      "留意：自選股重大訊息 6 則"
+    ]
+  },
+  "pending": [
+    "融資融券",
+    "借券",
+    "當沖"
+  ],
+  "days": [
+    {
+      "date": "2026-09-15",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 209,
+      "decliners": 790,
+      "foreign": -636.48,
+      "trust": -7.81,
+      "dealer": -157.05,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-16",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 735,
+      "decliners": 213,
+      "foreign": -204.36,
+      "trust": 134.27,
+      "dealer": -109.95,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-17",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 758,
+      "decliners": 246,
+      "foreign": 32.9,
+      "trust": 94.0,
+      "dealer": 34.85,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-18",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 751,
+      "decliners": 252,
+      "foreign": 1109.35,
+      "trust": 103.22,
+      "dealer": 279.4,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-21",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 486,
+      "decliners": 500,
+      "foreign": 129.42,
+      "trust": 15.69,
+      "dealer": 238.21,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-22",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 330,
+      "decliners": 640,
+      "foreign": 587.56,
+      "trust": -22.28,
+      "dealer": 163.15,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-23",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 390,
+      "decliners": 564,
+      "foreign": 198.65,
+      "trust": -54.95,
+      "dealer": 49.31,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-24",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 387,
+      "decliners": 548,
+      "foreign": -361.62,
+      "trust": -162.9,
+      "dealer": -4.84,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-29",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 376,
+      "decliners": 588,
+      "foreign": -681.24,
+      "trust": -5.82,
+      "dealer": -185.75,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-09-30",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 831,
+      "decliners": 188,
+      "foreign": 394.57,
+      "trust": 60.48,
+      "dealer": 16.29,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-01",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 422,
+      "decliners": 555,
+      "foreign": 160.03,
+      "trust": 35.43,
+      "dealer": 8.66,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-02",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 485,
+      "decliners": 507,
+      "foreign": 87.41,
+      "trust": 41.79,
+      "dealer": 26.84,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-05",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 364,
+      "decliners": 635,
+      "foreign": 745.42,
+      "trust": -38.82,
+      "dealer": 113.54,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-06",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 465,
+      "decliners": 520,
+      "foreign": -86.57,
+      "trust": -140.02,
+      "dealer": -5.76,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-07",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 591,
+      "decliners": 387,
+      "foreign": -28.11,
+      "trust": -93.82,
+      "dealer": -81.33,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-08",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 427,
+      "decliners": 542,
+      "foreign": -839.8,
+      "trust": 13.47,
+      "dealer": -198.01,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-12",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 540,
+      "decliners": 453,
+      "foreign": -563.02,
+      "trust": 79.78,
+      "dealer": -142.1,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-13",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 270,
+      "decliners": 733,
+      "foreign": -1704.67,
+      "trust": 278.41,
+      "dealer": -607.6,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-14",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 744,
+      "decliners": 241,
+      "foreign": -208.6,
+      "trust": 232.83,
+      "dealer": -96.89,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-15",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 200,
+      "decliners": 808,
+      "foreign": -3165.77,
+      "trust": 314.57,
+      "dealer": -966.77,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-16",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 684,
+      "decliners": 290,
+      "foreign": -362.61,
+      "trust": 121.64,
+      "dealer": -346.41,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-19",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 164,
+      "decliners": 851,
+      "foreign": -682.23,
+      "trust": 254.74,
+      "dealer": -361.76,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-20",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 271,
+      "decliners": 703,
+      "foreign": -871.81,
+      "trust": 186.36,
+      "dealer": -353.81,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-21",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 600,
+      "decliners": 384,
+      "foreign": -12.61,
+      "trust": 146.86,
+      "dealer": -115.92,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-22",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 247,
+      "decliners": 760,
+      "foreign": -822.06,
+      "trust": 85.23,
+      "dealer": -287.14,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-27",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 464,
+      "decliners": 527,
+      "foreign": -21.95,
+      "trust": 260.94,
+      "dealer": -97.77,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-28",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 717,
+      "decliners": 280,
+      "foreign": 236.28,
+      "trust": 174.75,
+      "dealer": 45.26,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-29",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 233,
+      "decliners": 739,
+      "foreign": -696.07,
+      "trust": 122.57,
+      "dealer": -209.47,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-10-30",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 92,
+      "decliners": 944,
+      "foreign": -1196.43,
+      "trust": 274.86,
+      "dealer": -512.83,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-02",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 519,
+      "decliners": 449,
+      "foreign": -752.09,
+      "trust": 316.6,
+      "dealer": -130.36,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-03",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 60,
+      "decliners": 1002,
+      "foreign": -1072.45,
+      "trust": 169.11,
+      "dealer": -574.04,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-04",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 438,
+      "decliners": 547,
+      "foreign": -1477.17,
+      "trust": 254.17,
+      "dealer": -343.83,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-05",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 167,
+      "decliners": 861,
+      "foreign": -975.45,
+      "trust": 213.35,
+      "dealer": -392.9,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-06",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 106,
+      "decliners": 955,
+      "foreign": -784.59,
+      "trust": 266.94,
+      "dealer": -498.58,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-09",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 806,
+      "decliners": 230,
+      "foreign": -942.41,
+      "trust": 310.67,
+      "dealer": -288.36,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-10",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 527,
+      "decliners": 494,
+      "foreign": -318.18,
+      "trust": 406.72,
+      "dealer": -165.7,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-11",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 638,
+      "decliners": 368,
+      "foreign": -35.39,
+      "trust": 207.5,
+      "dealer": 87.03,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-12",
+      "taiex": null,
+      "taiex_pct": null,
+      "turnover": null,
+      "tpex": null,
+      "tpex_pct": null,
+      "advancers": 279,
+      "decliners": 731,
+      "foreign": 46.05,
+      "trust": 133.57,
+      "dealer": -82.12,
+      "futures_foreign": null,
+      "put_call": null,
+      "margin": null,
+      "above_ma20": null
+    },
+    {
+      "date": "2026-11-13",
+      "taiex": 43675.12,
+      "taiex_pct": 1.35,
+      "turnover": 9515.8,
+      "tpex": 342.41,
+      "tpex_pct": 1.99,
+      "advancers": 812,
+      "decliners": 200,
+      "foreign": 323.86,
+      "trust": 69.83,
+      "dealer": 70.01,
+      "futures_foreign": -100870,
+      "put_call": 57.75,
+      "margin": null,
+      "above_ma20": 28.4
+    }
+  ],
+  "watchlist": [
+    {
+      "symbol": "0050",
+      "name": "元大台灣50",
+      "close": 102.5,
+      "change_pct": 1.5354,
+      "pe": null,
+      "dividend_yield": null,
+      "foreign_window": -1.48,
+      "trust_window": 29.99,
+      "rsi14": 43.3,
+      "k9": 71.1,
+      "d9": 52.8,
+      "bias20": -1.15,
+      "closes": [
+        [
+          "2026-09-15",
+          106.25
+        ],
+        [
+          "2026-09-16",
+          106.9
+        ],
+        [
+          "2026-09-17",
+          108.05
+        ],
+        [
+          "2026-09-18",
+          109.85
+        ],
+        [
+          "2026-09-21",
+          111.35
+        ],
+        [
+          "2026-09-22",
+          111.85
+        ],
+        [
+          "2026-09-23",
+          112.45
+        ],
+        [
+          "2026-09-24",
+          112.4
+        ],
+        [
+          "2026-09-29",
+          111.3
+        ],
+        [
+          "2026-09-30",
+          112.05
+        ],
+        [
+          "2026-10-01",
+          112.9
+        ],
+        [
+          "2026-10-02",
+          112.8
+        ],
+        [
+          "2026-10-05",
+          115.95
+        ],
+        [
+          "2026-10-06",
+          116.5
+        ],
+        [
+          "2026-10-07",
+          116.05
+        ],
+        [
+          "2026-10-08",
+          114.95
+        ],
+        [
+          "2026-10-12",
+          114.8
+        ],
+        [
+          "2026-10-13",
+          112.4
+        ],
+        [
+          "2026-10-14",
+          113.0
+        ],
+        [
+          "2026-10-15",
+          108.9
+        ],
+        [
+          "2026-10-16",
+          109.0
+        ],
+        [
+          "2026-10-19",
+          108.15
+        ],
+        [
+          "2026-10-20",
+          107.25
+        ],
+        [
+          "2026-10-21",
+          108.15
+        ],
+        [
+          "2026-10-22",
+          106.9
+        ],
+        [
+          "2026-10-27",
+          106.6
+        ],
+        [
+          "2026-10-28",
+          108.65
+        ],
+        [
+          "2026-10-29",
+          107.25
+        ],
+        [
+          "2026-10-30",
+          104.95
+        ],
+        [
+          "2026-11-02",
+          104.1
+        ],
+        [
+          "2026-11-03",
+          100.6
+        ],
+        [
+          "2026-11-04",
+          99.85
+        ],
+        [
+          "2026-11-05",
+          97.15
+        ],
+        [
+          "2026-11-06",
+          92.5
+        ],
+        [
+          "2026-11-09",
+          97.45
+        ],
+        [
+          "2026-11-10",
+          99.7
+        ],
+        [
+          "2026-11-11",
+          103.2
+        ],
+        [
+          "2026-11-12",
+          100.95
+        ],
+        [
+          "2026-11-13",
+          102.5
+        ]
+      ]
+    },
+    {
+      "symbol": "2317",
+      "name": "鴻海",
+      "close": 241.0,
+      "change_pct": 0.4167,
+      "pe": 15.89,
+      "dividend_yield": 2.98,
+      "foreign_window": 48.19,
+      "trust_window": 5.9,
+      "rsi14": 46.9,
+      "k9": 67.5,
+      "d9": 59.4,
+      "bias20": -0.65,
+      "closes": [
+        [
+          "2026-09-15",
+          246.5
+        ],
+        [
+          "2026-09-16",
+          248.0
+        ],
+        [
+          "2026-09-17",
+          250.5
+        ],
+        [
+          "2026-09-18",
+          250.5
+        ],
+        [
+          "2026-09-21",
+          250.0
+        ],
+        [
+          "2026-09-22",
+          253.0
+        ],
+        [
+          "2026-09-23",
+          256.0
+        ],
+        [
+          "2026-09-24",
+          250.5
+        ],
+        [
+          "2026-09-29",
+          250.5
+        ],
+        [
+          "2026-09-30",
+          251.5
+        ],
+        [
+          "2026-10-01",
+          254.0
+        ],
+        [
+          "2026-10-02",
+          251.0
+        ],
+        [
+          "2026-10-05",
+          254.0
+        ],
+        [
+          "2026-10-06",
+          256.0
+        ],
+        [
+          "2026-10-07",
+          252.0
+        ],
+        [
+          "2026-10-08",
+          249.0
+        ],
+        [
+          "2026-10-12",
+          244.5
+        ],
+        [
+          "2026-10-13",
+          240.0
+        ],
+        [
+          "2026-10-14",
+          243.0
+        ],
+        [
+          "2026-10-15",
+          239.5
+        ],
+        [
+          "2026-10-16",
+          244.0
+        ],
+        [
+          "2026-10-19",
+          239.5
+        ],
+        [
+          "2026-10-20",
+          241.5
+        ],
+        [
+          "2026-10-21",
+          250.0
+        ],
+        [
+          "2026-10-22",
+          245.0
+        ],
+        [
+          "2026-10-27",
+          247.5
+        ],
+        [
+          "2026-10-28",
+          251.5
+        ],
+        [
+          "2026-10-29",
+          248.0
+        ],
+        [
+          "2026-10-30",
+          245.5
+        ],
+        [
+          "2026-11-02",
+          251.0
+        ],
+        [
+          "2026-11-03",
+          245.5
+        ],
+        [
+          "2026-11-04",
+          240.0
+        ],
+        [
+          "2026-11-05",
+          235.0
+        ],
+        [
+          "2026-11-06",
+          224.5
+        ],
+        [
+          "2026-11-09",
+          239.0
+        ],
+        [
+          "2026-11-10",
+          241.5
+        ],
+        [
+          "2026-11-11",
+          242.0
+        ],
+        [
+          "2026-11-12",
+          240.0
+        ],
+        [
+          "2026-11-13",
+          241.0
+        ]
+      ]
+    },
+    {
+      "symbol": "2330",
+      "name": "台積電",
+      "close": 2350.0,
+      "change_pct": 0.4274,
+      "pe": 23.92,
+      "dividend_yield": 0.94,
+      "foreign_window": -392.18,
+      "trust_window": 343.47,
+      "rsi14": 47.3,
+      "k9": 75.2,
+      "d9": 57.4,
+      "bias20": 0.07,
+      "closes": [
+        [
+          "2026-09-15",
+          2385.0
+        ],
+        [
+          "2026-09-16",
+          2380.0
+        ],
+        [
+          "2026-09-17",
+          2425.0
+        ],
+        [
+          "2026-09-18",
+          2460.0
+        ],
+        [
+          "2026-09-21",
+          2480.0
+        ],
+        [
+          "2026-09-22",
+          2460.0
+        ],
+        [
+          "2026-09-23",
+          2500.0
+        ],
+        [
+          "2026-09-24",
+          2475.0
+        ],
+        [
+          "2026-09-29",
+          2475.0
+        ],
+        [
+          "2026-09-30",
+          2480.0
+        ],
+        [
+          "2026-10-01",
+          2510.0
+        ],
+        [
+          "2026-10-02",
+          2500.0
+        ],
+        [
+          "2026-10-05",
+          2575.0
+        ],
+        [
+          "2026-10-06",
+          2585.0
+        ],
+        [
+          "2026-10-07",
+          2585.0
+        ],
+        [
+          "2026-10-08",
+          2550.0
+        ],
+        [
+          "2026-10-12",
+          2540.0
+        ],
+        [
+          "2026-10-13",
+          2490.0
+        ],
+        [
+          "2026-10-14",
+          2490.0
+        ],
+        [
+          "2026-10-15",
+          2440.0
+        ],
+        [
+          "2026-10-16",
+          2420.0
+        ],
+        [
+          "2026-10-19",
+          2420.0
+        ],
+        [
+          "2026-10-20",
+          2405.0
+        ],
+        [
+          "2026-10-21",
+          2420.0
+        ],
+        [
+          "2026-10-22",
+          2385.0
+        ],
+        [
+          "2026-10-27",
+          2400.0
+        ],
+        [
+          "2026-10-28",
+          2425.0
+        ],
+        [
+          "2026-10-29",
+          2415.0
+        ],
+        [
+          "2026-10-30",
+          2370.0
+        ],
+        [
+          "2026-11-02",
+          2330.0
+        ],
+        [
+          "2026-11-03",
+          2295.0
+        ],
+        [
+          "2026-11-04",
+          2260.0
+        ],
+        [
+          "2026-11-05",
+          2240.0
+        ],
+        [
+          "2026-11-06",
+          2135.0
+        ],
+        [
+          "2026-11-09",
+          2235.0
+        ],
+        [
+          "2026-11-10",
+          2285.0
+        ],
+        [
+          "2026-11-11",
+          2395.0
+        ],
+        [
+          "2026-11-12",
+          2340.0
+        ],
+        [
+          "2026-11-13",
+          2350.0
+        ]
+      ]
+    },
+    {
+      "symbol": "2454",
+      "name": "聯發科",
+      "close": 4120.0,
+      "change_pct": 7.013,
+      "pe": 66.27,
+      "dividend_yield": 1.3,
+      "foreign_window": -35.71,
+      "trust_window": 111.61,
+      "rsi14": 52.3,
+      "k9": 72.1,
+      "d9": 55.2,
+      "bias20": 4.57,
+      "closes": [
+        [
+          "2026-09-15",
+          4430.0
+        ],
+        [
+          "2026-09-16",
+          4530.0
+        ],
+        [
+          "2026-09-17",
+          4500.0
+        ],
+        [
+          "2026-09-18",
+          4710.0
+        ],
+        [
+          "2026-09-21",
+          5010.0
+        ],
+        [
+          "2026-09-22",
+          5180.0
+        ],
+        [
+          "2026-09-23",
+          5185.0
+        ],
+        [
+          "2026-09-24",
+          5285.0
+        ],
+        [
+          "2026-09-29",
+          4910.0
+        ],
+        [
+          "2026-09-30",
+          4920.0
+        ],
+        [
+          "2026-10-01",
+          4980.0
+        ],
+        [
+          "2026-10-02",
+          4950.0
+        ],
+        [
+          "2026-10-05",
+          5165.0
+        ],
+        [
+          "2026-10-06",
+          4920.0
+        ],
+        [
+          "2026-10-07",
+          4835.0
+        ],
+        [
+          "2026-10-08",
+          4690.0
+        ],
+        [
+          "2026-10-12",
+          4625.0
+        ],
+        [
+          "2026-10-13",
+          4525.0
+        ],
+        [
+          "2026-10-14",
+          4475.0
+        ],
+        [
+          "2026-10-15",
+          4165.0
+        ],
+        [
+          "2026-10-16",
+          4250.0
+        ],
+        [
+          "2026-10-19",
+          4205.0
+        ],
+        [
+          "2026-10-20",
+          4150.0
+        ],
+        [
+          "2026-10-21",
+          4140.0
+        ],
+        [
+          "2026-10-22",
+          4010.0
+        ],
+        [
+          "2026-10-27",
+          3960.0
+        ],
+        [
+          "2026-10-28",
+          4235.0
+        ],
+        [
+          "2026-10-29",
+          4045.0
+        ],
+        [
+          "2026-10-30",
+          3915.0
+        ],
+        [
+          "2026-11-02",
+          3970.0
+        ],
+        [
+          "2026-11-03",
+          3675.0
+        ],
+        [
+          "2026-11-04",
+          3715.0
+        ],
+        [
+          "2026-11-05",
+          3460.0
+        ],
+        [
+          "2026-11-06",
+          3390.0
+        ],
+        [
+          "2026-11-09",
+          3725.0
+        ],
+        [
+          "2026-11-10",
+          3830.0
+        ],
+        [
+          "2026-11-11",
+          3990.0
+        ],
+        [
+          "2026-11-12",
+          3850.0
+        ],
+        [
+          "2026-11-13",
+          4120.0
+        ]
+      ]
+    },
+    {
+      "symbol": "6488",
+      "name": "環球晶",
+      "close": 630.0,
+      "change_pct": 1.2862,
+      "pe": 35.47,
+      "dividend_yield": 1.22,
+      "foreign_window": -1.24,
+      "trust_window": -9.34,
+      "rsi14": 31.7,
+      "k9": 38.6,
+      "d9": 26.4,
+      "bias20": -14.24,
+      "closes": [
+        [
+          "2026-09-15",
+          914.0
+        ],
+        [
+          "2026-09-16",
+          937.0
+        ],
+        [
+          "2026-09-17",
+          912.0
+        ],
+        [
+          "2026-09-18",
+          944.0
+        ],
+        [
+          "2026-09-21",
+          931.0
+        ],
+        [
+          "2026-09-22",
+          971.0
+        ],
+        [
+          "2026-09-23",
+          950.0
+        ],
+        [
+          "2026-09-24",
+          948.0
+        ],
+        [
+          "2026-09-29",
+          945.0
+        ],
+        [
+          "2026-09-30",
+          1035.0
+        ],
+        [
+          "2026-10-01",
+          1085.0
+        ],
+        [
+          "2026-10-02",
+          1190.0
+        ],
+        [
+          "2026-10-05",
+          1180.0
+        ],
+        [
+          "2026-10-06",
+          1205.0
+        ],
+        [
+          "2026-10-07",
+          1215.0
+        ],
+        [
+          "2026-10-08",
+          1130.0
+        ],
+        [
+          "2026-10-12",
+          1115.0
+        ],
+        [
+          "2026-10-13",
+          1015.0
+        ],
+        [
+          "2026-10-14",
+          1020.0
+        ],
+        [
+          "2026-10-15",
+          923.0
+        ],
+        [
+          "2026-10-16",
+          902.0
+        ],
+        [
+          "2026-10-19",
+          882.0
+        ],
+        [
+          "2026-10-20",
+          844.0
+        ],
+        [
+          "2026-10-21",
+          880.0
+        ],
+        [
+          "2026-10-22",
+          826.0
+        ],
+        [
+          "2026-10-27",
+          814.0
+        ],
+        [
+          "2026-10-28",
+          849.0
+        ],
+        [
+          "2026-10-29",
+          814.0
+        ],
+        [
+          "2026-10-30",
+          756.0
+        ],
+        [
+          "2026-11-02",
+          760.0
+        ],
+        [
+          "2026-11-03",
+          685.0
+        ],
+        [
+          "2026-11-04",
+          619.0
+        ],
+        [
+          "2026-11-05",
+          564.0
+        ],
+        [
+          "2026-11-06",
+          512.0
+        ],
+        [
+          "2026-11-09",
+          563.0
+        ],
+        [
+          "2026-11-10",
+          612.0
+        ],
+        [
+          "2026-11-11",
+          635.0
+        ],
+        [
+          "2026-11-12",
+          622.0
+        ],
+        [
+          "2026-11-13",
+          630.0
+        ]
+      ]
+    }
+  ]
+}
