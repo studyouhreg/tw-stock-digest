@@ -47,7 +47,7 @@ def demo_auxiliary(trade_date, watchlist):
                  yoy_pct=25.4, ytd_yoy_pct=30.2)]),
     }
     symbols = {'2330': dict(margin=30000.0, margin_change=500.0, short=800.0, short_change=-20.0,
-                            sbl=12000.0, sbl_change=300.0, daytrade=8000000.0),
+                            sbl=12000.0, sbl_change=300.0, daytrade=300000.0),
                '6488': dict(margin=4000.0, margin_change=-120.0, short=90.0, short_change=5.0,
-                            sbl=600.0, sbl_change=-10.0, daytrade=900000.0)}
+                            sbl=600.0, sbl_change=-10.0, daytrade=20000.0)}
     return symbols, payloads, {name: 'demo' for name in payloads}

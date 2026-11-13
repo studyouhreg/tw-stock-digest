@@ -88,7 +88,7 @@ def daytrade_section(p, days, watchlist, top):
                     key=lambda x: (-x[0], x[1]))
     rows = [dict(symbol=s, name=today[s]['name'], daytrade_pct=ratio(today[s])) for s in watchlist
             if s in today and ratio(today[s]) is not None]
-    if not market and not ranked:
+    if not market and not ranked and not rows:
         return None
     return dict(market=market, watchlist=rows,
                 highest=[dict(symbol=s, name=r['name'], daytrade_pct=v, turnover_100m_twd=to_100m(r['turnover_twd']),

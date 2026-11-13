@@ -398,7 +398,8 @@ def revenue_lines(x):
     if x['watchlist']:
         lines += ['', '自選清單：', '']
         lines += table(['代碼', '名稱', '月份', '營收（億）', '月增 %', '年增 %', '累計年增 %'],
-                       [[w['symbol'], w['name'], w['month'], w['revenue_100m_twd'], percent(w['mom_pct']),
+                       [[w['symbol'], w['name'], w['month'],
+                         '—' if w['revenue_100m_twd'] is None else f"{w['revenue_100m_twd']:,.2f}", percent(w['mom_pct']),
                          percent(w['yoy_pct']), percent(w['ytd_yoy_pct'])] for w in x['watchlist']], left=3)
     return lines
 
@@ -407,8 +408,9 @@ def exdividend_lines(x):
     lines = ['', '## 除權息預告', '']
     if not x['count']:
         return lines + ['未來 7 天沒有除權息的股票或 ETF。']
-    names = '、'.join(f"{n['symbol']} {n['name']}（{n['kind']}）" for n in x['next'])
-    lines += [f"未來 7 天共 {x['count']} 檔；最近一批 {x['next_date']}：{names}。"]
+    names = '、'.join(f"{n['symbol']} {n['name']}（{n['kind']}）" for n in x['next'][:8])
+    more = f" 等 {len(x['next'])} 檔" if len(x['next']) > 8 else ''
+    lines += [f"未來 7 天共 {x['count']} 檔；最近一批 {x['next_date']}：{names}{more}。"]
     if x['watchlist']:
         lines += ['', '自選股：' + '、'.join(f"{w['name']} {w['date']}（{w['kind']}）" for w in x['watchlist'])]
     return lines

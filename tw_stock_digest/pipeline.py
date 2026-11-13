@@ -141,8 +141,10 @@ def enrich(context, quotes, extras, auxiliary, root, state, watchlist):
     payloads = {}
     if auxiliary is not None:
         aux_rows, payloads, aux_status = auxiliary(trade_date, watchlist)
+        quoted = {q['symbol'] for q in quotes}
         for symbol, record in aux_rows.items():
-            rows.setdefault(symbol, {}).update(record)
+            if symbol in quoted:  # the depository also lists securities this digest does not cover
+                rows.setdefault(symbol, {}).update(record)
         status.update(aux_status)
     # A retry must not lose a source that an earlier save of this day already had.
     kept = keep_previous(rows, status, *read_saved_extras(saved), {q['symbol']: q['market'] for q in quotes},
