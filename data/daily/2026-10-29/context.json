@@ -1124,7 +1124,7 @@
         "close": 46368.33,
         "change": -667.25,
         "change_pct": -1.42,
-        "turnover_100m_twd": null
+        "turnover_100m_twd": 8238.13
       },
       "sectors_up": [
         {
@@ -1945,6 +1945,11 @@
           "change_pct": -0.08
         }
       ]
+    },
+    "twse_turnover": {
+      "turnover_twd": 823812748529.0,
+      "volume_shares": 10121315552.0,
+      "trades": 4702463.0
     },
     "tpex_index": {
       "close": 387.37,

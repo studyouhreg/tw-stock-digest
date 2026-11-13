@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-08-03",
   "demo": false,
-  "captured_at_utc": "2026-11-13T11:48:52.153947+00:00",
+  "captured_at_utc": "2026-11-13T13:18:57.119944+00:00",
   "sources": {
     "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d:%Y%m%d}&type=ALLBUT0999&response=json",
     "TPEX": "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "1972221e774a59ce12084fea2a6ba0fb84233584f9e17eaa0c884945bc6ea6a9",
     "analysis.md": "2516599abd07e965cdb73e32da52627e2445cd71c00cbf2fb636a44fea3d9768",
-    "claude-prompt.md": "c7217280a2b8084a446ef24eb6b092599d89d1fc384c71e8250435f2142d6d02",
-    "context.json": "c560316dc6c53eb71ad2fc5f6409be7e3f8d3d0932ee2aca46c420434b2718eb",
-    "extras.csv": "648f605fc50bd7c5caac7176efd428cabf32c6a3ef96f48adeade50de80eaf82",
-    "facts.md": "7021d957f4ea7432a957ed6b948520d6b811f5d4a30a799e11ebdde1b95b3d83",
+    "claude-prompt.md": "ebd3e74b51aa8ae9a6b01c673422d0454e1012fcef9bd9dc40a33fc593a34ea5",
+    "context.json": "7f51941b79ea1fefa3bc81a054db3d7970eebdadebb3ed445017a6139c50ea0e",
+    "extras.csv": "d8290f3a6b2f541f69b8d1abcbdd3b3c1fb16b02984258a31e76dc6cb8633be5",
+    "facts.md": "cdfeed5194b8bb55d389f9c0106bff803cf1cdd18938be07d48dafaa09781cae",
     "quotes.csv": "7b0a113d936e1faff75c2cdcfcfdb866aeda478482999201f35897f0bf5a6ffc"
   },
   "extras": {
@@ -31,7 +31,7 @@
     "taifex_futures": "ok",
     "taifex_pcr": "ok",
     "taifex_large": "ok",
-    "twse_margin": "failed:RemoteError",
+    "twse_margin": "ok",
     "tpex_margin": "ok",
     "twse_sbl": "ok",
     "tpex_sbl": "ok",
@@ -48,19 +48,19 @@
     "tpex_exright": "unavailable",
     "tdcc": "unavailable"
   },
-  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights changes come from the reference price table.",
+  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights changes come from the reference price table. Rebuilt from the saved quotes to add supplementary data.",
   "analysis": "disabled",
   "archive_format": "github-normalized-v1",
   "source_files_sha256": {
     "analysis.json": "1972221e774a59ce12084fea2a6ba0fb84233584f9e17eaa0c884945bc6ea6a9",
     "analysis.md": "2516599abd07e965cdb73e32da52627e2445cd71c00cbf2fb636a44fea3d9768",
-    "raw_TWSE.json": "010ac416e719e10ee588e3e0baf3384c3065fa20790be19f93c54f8f0d6b96a5",
-    "raw_TPEX.json": "24c179365ba4a182d6f9bc67256bbb5686c44fba80404c991147c9536aede54b",
+    "raw_TWSE.json": "e2438d28075e0418068a420aa94653c95a0ebc5cb2212cc47cf896c497f7fba6",
+    "raw_TPEX.json": "89784fb1767d3f3a10d40d319a2cd8682b02165a852e202ae76d0741a12fd7dc",
     "quotes.csv": "7b0a113d936e1faff75c2cdcfcfdb866aeda478482999201f35897f0bf5a6ffc",
-    "extras.csv": "648f605fc50bd7c5caac7176efd428cabf32c6a3ef96f48adeade50de80eaf82",
-    "context.json": "c560316dc6c53eb71ad2fc5f6409be7e3f8d3d0932ee2aca46c420434b2718eb",
-    "claude-prompt.md": "c7217280a2b8084a446ef24eb6b092599d89d1fc384c71e8250435f2142d6d02",
-    "facts.md": "7021d957f4ea7432a957ed6b948520d6b811f5d4a30a799e11ebdde1b95b3d83"
+    "extras.csv": "d8290f3a6b2f541f69b8d1abcbdd3b3c1fb16b02984258a31e76dc6cb8633be5",
+    "context.json": "7f51941b79ea1fefa3bc81a054db3d7970eebdadebb3ed445017a6139c50ea0e",
+    "claude-prompt.md": "ebd3e74b51aa8ae9a6b01c673422d0454e1012fcef9bd9dc40a33fc593a34ea5",
+    "facts.md": "cdfeed5194b8bb55d389f9c0106bff803cf1cdd18938be07d48dafaa09781cae"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }

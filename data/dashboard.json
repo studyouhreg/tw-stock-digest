@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-13T13:18:03+00:00",
+  "generated_at_utc": "2026-11-13T13:23:41+00:00",
   "latest": "2026-11-13",
   "window_days": 5,
   "headline": {
@@ -289,7 +289,7 @@
       "dealer": -188.46,
       "futures_foreign": -90038,
       "put_call": 97.66,
-      "margin": null,
+      "margin": 5147.55,
       "above_ma20": null
     },
     {
@@ -1246,9 +1246,9 @@
     },
     {
       "date": "2026-10-28",
-      "taiex": null,
-      "taiex_pct": null,
-      "turnover": null,
+      "taiex": 47035.58,
+      "taiex_pct": 2.04,
+      "turnover": 7503.41,
       "tpex": 394.61,
       "tpex_pct": 4.06,
       "advancers": 717,
@@ -1265,7 +1265,7 @@
       "date": "2026-10-29",
       "taiex": 46368.33,
       "taiex_pct": -1.42,
-      "turnover": null,
+      "turnover": 8238.13,
       "tpex": 387.37,
       "tpex_pct": -1.83,
       "advancers": 233,
@@ -1314,9 +1314,9 @@
     },
     {
       "date": "2026-11-03",
-      "taiex": null,
-      "taiex_pct": null,
-      "turnover": null,
+      "taiex": 43307.54,
+      "taiex_pct": -3.59,
+      "turnover": 10020.36,
       "tpex": 345.52,
       "tpex_pct": -6.42,
       "advancers": 60,

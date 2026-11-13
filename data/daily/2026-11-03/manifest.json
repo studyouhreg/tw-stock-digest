@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-11-03",
   "demo": false,
-  "captured_at_utc": "2026-11-13T13:07:39.048798+00:00",
+  "captured_at_utc": "2026-11-13T13:22:29.350775+00:00",
   "sources": {
     "TWSE": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
     "TPEX": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "f423224cd49c77e8a6376d4a8084d3188af3a09bcaa58d272d4e90dd4544f833",
     "analysis.md": "6162f2779035f9f8a726cc294a32e4bafc0cba14a0ba11d5bda5ecfc8017b477",
-    "claude-prompt.md": "8a296ef1a67544a185f2ee7e0ca2956aba53e32b095c050e4e04de4fb59f5b2c",
-    "context.json": "858a295dafa285bf03183050346fc33216b09e3710781b4ad914aa0a2f225ad3",
+    "claude-prompt.md": "6c872d2de8c32baf607462b0d682c62d6fe1e8f10904fe77d06a98e864826287",
+    "context.json": "5295b67a9cb856dcef50b649b010673b2344427cc4a229463b7e120e697d3cd2",
     "extras.csv": "2b8a759c483dfc5ef386b54df4b3553710527ee68e8b6e9da070aa2c4910fc1a",
-    "facts.md": "39a7c7dac1504819bfe2be9e926a2f6fa6a6510aff436d87c5939e65831e3ee2",
+    "facts.md": "e6794ac3fe6863f2c1027ce9e87924e7ee0eaacfca9b751f022f140f51db0e02",
     "quotes.csv": "59aaafe72564c4cbd43dba2619a2455615eb9dd70c6f7f846a753a3b65703351"
   },
   "extras": {
@@ -25,7 +25,7 @@
     "tpex_valuation": "ok",
     "twse_industry": "ok",
     "tpex_industry": "ok",
-    "twse_index": "failed:RemoteError",
+    "twse_index": "ok",
     "twse_turnover": "ok",
     "tpex_index": "ok",
     "taifex_futures": "ok",
@@ -58,9 +58,9 @@
     "raw_TPEX.json": "a4079a6ebcbb83f820d85401ae2dc04a70ce4dd4e495c924e93664fb9c3d5d0f",
     "quotes.csv": "59aaafe72564c4cbd43dba2619a2455615eb9dd70c6f7f846a753a3b65703351",
     "extras.csv": "2b8a759c483dfc5ef386b54df4b3553710527ee68e8b6e9da070aa2c4910fc1a",
-    "context.json": "858a295dafa285bf03183050346fc33216b09e3710781b4ad914aa0a2f225ad3",
-    "claude-prompt.md": "8a296ef1a67544a185f2ee7e0ca2956aba53e32b095c050e4e04de4fb59f5b2c",
-    "facts.md": "39a7c7dac1504819bfe2be9e926a2f6fa6a6510aff436d87c5939e65831e3ee2"
+    "context.json": "5295b67a9cb856dcef50b649b010673b2344427cc4a229463b7e120e697d3cd2",
+    "claude-prompt.md": "6c872d2de8c32baf607462b0d682c62d6fe1e8f10904fe77d06a98e864826287",
+    "facts.md": "e6794ac3fe6863f2c1027ce9e87924e7ee0eaacfca9b751f022f140f51db0e02"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }

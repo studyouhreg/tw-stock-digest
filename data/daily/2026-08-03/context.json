@@ -298,7 +298,7 @@
     "市場統計僅為上述涵蓋範圍，並非加權指數或官方市場總成交值。",
     "change_pct 由官方價差與推算參考價換算，並非含息報酬；除權息需另查。"
   ],
-  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights changes come from the reference price table.",
+  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights changes come from the reference price table. Rebuilt from the saved quotes to add supplementary data.",
   "insights": {
     "valuation": {
       "markets": {
@@ -314,7 +314,7 @@
           "median_pb": 1.62,
           "median_dividend_yield": 2.63,
           "with_pe": 837,
-          "without_pe": 245
+          "without_pe": 249
         }
       },
       "industries": {
@@ -1174,11 +1174,11 @@
     "margin": {
       "market": {
         "TWSE": {
-          "margin_100m_twd": null,
-          "margin_change_100m_twd": null,
-          "margin_lots_change": null,
-          "short_lots": null,
-          "short_lots_change": null,
+          "margin_100m_twd": 5147.55,
+          "margin_change_100m_twd": 72.93,
+          "margin_lots_change": -23565.0,
+          "short_lots": 185322.0,
+          "short_lots_change": -3002.0,
           "sbl_lots": 37210893,
           "sbl_lots_change": -210833
         },
@@ -1194,89 +1194,137 @@
       },
       "increases": [
         {
-          "symbol": "6274",
-          "name": "台燿",
-          "margin_change_lots": 425,
-          "margin_change_100m_twd": 5.18,
-          "margin_lots": 8072,
-          "change_pct": 9.91
+          "symbol": "2408",
+          "name": "南亞科",
+          "margin_change_lots": 7367,
+          "margin_change_100m_twd": 29.21,
+          "margin_lots": 89268,
+          "change_pct": 9.99
         },
         {
-          "symbol": "6488",
-          "name": "環球晶",
-          "margin_change_lots": 543,
-          "margin_change_100m_twd": 4.7,
-          "margin_lots": 11184,
-          "change_pct": 1.29
+          "symbol": "1303",
+          "name": "南亞",
+          "margin_change_lots": 12752,
+          "margin_change_100m_twd": 21.04,
+          "margin_lots": 46557,
+          "change_pct": 3.45
         },
         {
-          "symbol": "5289",
-          "name": "宜鼎",
-          "margin_change_lots": 214,
-          "margin_change_100m_twd": 2.96,
-          "margin_lots": 4270,
-          "change_pct": 6.95
+          "symbol": "2330",
+          "name": "台積電",
+          "margin_change_lots": 714,
+          "margin_change_100m_twd": 16.92,
+          "margin_lots": 30003,
+          "change_pct": -2.27
         },
         {
-          "symbol": "3081",
-          "name": "聯亞",
-          "margin_change_lots": 68,
-          "margin_change_100m_twd": 1.22,
-          "margin_lots": 4862,
-          "change_pct": 9.82
+          "symbol": "6669",
+          "name": "緯穎",
+          "margin_change_lots": 233,
+          "margin_change_100m_twd": 13.81,
+          "margin_lots": 1435,
+          "change_pct": 9.93
         },
         {
-          "symbol": "6187",
-          "name": "萬潤",
-          "margin_change_lots": 119,
-          "margin_change_100m_twd": 1.2,
-          "margin_lots": 2685,
-          "change_pct": null
+          "symbol": "2383",
+          "name": "台光電",
+          "margin_change_lots": 241,
+          "margin_change_100m_twd": 12.0,
+          "margin_lots": 2195,
+          "change_pct": 4.95
         }
       ],
       "decreases": [
         {
-          "symbol": "5483",
-          "name": "中美晶",
-          "margin_change_lots": -1498,
-          "margin_change_100m_twd": -2.58,
-          "margin_lots": 13044,
-          "change_pct": 9.87
+          "symbol": "7769",
+          "name": "鴻勁",
+          "margin_change_lots": -93,
+          "margin_change_100m_twd": -5.98,
+          "margin_lots": 299,
+          "change_pct": 3.96
         },
         {
-          "symbol": "6223",
-          "name": "旺矽",
-          "margin_change_lots": -29,
-          "margin_change_100m_twd": -1.68,
-          "margin_lots": 830,
-          "change_pct": 9.94
+          "symbol": "2454",
+          "name": "聯發科",
+          "margin_change_lots": -139,
+          "margin_change_100m_twd": -5.43,
+          "margin_lots": 9877,
+          "change_pct": 9.99
         },
         {
-          "symbol": "5274",
-          "name": "信驊",
-          "margin_change_lots": -10,
-          "margin_change_100m_twd": -1.6,
-          "margin_lots": 125,
-          "change_pct": 9.98
+          "symbol": "2059",
+          "name": "川湖",
+          "margin_change_lots": -57,
+          "margin_change_100m_twd": -4.92,
+          "margin_lots": 365,
+          "change_pct": 10.0
         },
         {
-          "symbol": "8299",
-          "name": "群聯",
-          "margin_change_lots": -60,
-          "margin_change_100m_twd": -1.06,
-          "margin_lots": 10908,
-          "change_pct": 7.32
+          "symbol": "2344",
+          "name": "華邦電",
+          "margin_change_lots": -3135,
+          "margin_change_100m_twd": -4.48,
+          "margin_lots": 122076,
+          "change_pct": 10.0
         },
         {
-          "symbol": "6182",
-          "name": "合晶",
-          "margin_change_lots": -1193,
-          "margin_change_100m_twd": -1.05,
-          "margin_lots": 62924,
-          "change_pct": -1.01
+          "symbol": "2345",
+          "name": "智邦",
+          "margin_change_lots": -169,
+          "margin_change_100m_twd": -3.95,
+          "margin_lots": 1318,
+          "change_pct": 9.88
         }
       ],
       "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "margin_lots": 31491,
+          "margin_change_lots": -2185,
+          "margin_window_change_lots": 12115,
+          "window_days": 5,
+          "short_lots": 909,
+          "short_margin_ratio_pct": 2.89,
+          "sbl_lots": 208501,
+          "sbl_change_lots": 975
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "margin_lots": 30003,
+          "margin_change_lots": 714,
+          "margin_window_change_lots": -1903,
+          "window_days": 5,
+          "short_lots": 101,
+          "short_margin_ratio_pct": 0.34,
+          "sbl_lots": 16148,
+          "sbl_change_lots": 138
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "margin_lots": 50550,
+          "margin_change_lots": -314,
+          "margin_window_change_lots": -2487,
+          "window_days": 5,
+          "short_lots": 342,
+          "short_margin_ratio_pct": 0.68,
+          "sbl_lots": 79999,
+          "sbl_change_lots": -387
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "margin_lots": 9877,
+          "margin_change_lots": -139,
+          "margin_window_change_lots": -26,
+          "window_days": 5,
+          "short_lots": 62,
+          "short_margin_ratio_pct": 0.63,
+          "sbl_lots": 2235,
+          "sbl_change_lots": -28
+        },
         {
           "symbol": "6488",
           "name": "環球晶",
@@ -1963,6 +2011,14 @@
       "top10_net": -2143,
       "market_oi": 125886,
       "top10_specific_net": -6096
+    },
+    "twse_margin": {
+      "margin_twd": 514755393000.0,
+      "margin_change_twd": 7292622000.0,
+      "margin_lots": 9120700.0,
+      "margin_lots_change": -23565.0,
+      "short_lots": 185322.0,
+      "short_lots_change": -3002.0
     },
     "tpex_margin": {
       "margin_twd": 167007662000.0,

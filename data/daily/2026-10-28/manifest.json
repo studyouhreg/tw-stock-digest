@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-10-28",
   "demo": false,
-  "captured_at_utc": "2026-11-13T13:01:58.497698+00:00",
+  "captured_at_utc": "2026-11-13T13:19:56.875482+00:00",
   "sources": {
     "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d:%Y%m%d}&type=ALLBUT0999&response=json",
     "TPEX": "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "b88fccdac988f926d25c5b4299a9897b388e6b7fa562ddf291e61fb1c3010db5",
     "analysis.md": "d2856d0c7dc48be7cf1f30244b5c68ba8009e8474013ec5d2ad7cf8538231d35",
-    "claude-prompt.md": "4cafbb478e21a05ccc7e5abbdb246a1075f2425d1e02a227c0351a0dc79565ac",
-    "context.json": "00d9c8358b41e2fa24916efe70d61719834b5793973dc8a933ee72f7216f8598",
+    "claude-prompt.md": "182873d32e567ba8806449506125a6145d35ba3f70988e626bd4196b3a1a5fd4",
+    "context.json": "0f7cd059670be60d9237445b71a639f17e4e087bf6a9ba11540a954ae046b180",
     "extras.csv": "faf4f8d21b34cffc8a13d1b0eb99248dbe0c71e1097071018bed1cf4f8c4c161",
-    "facts.md": "05601172deb688f28407e1e34a2857c02924a26b373ddf294719b714ae16d424",
+    "facts.md": "d78660aebef1704d5828ae9515e3f60c56eee616c4e1bedd90662727fcca78a3",
     "quotes.csv": "de4bf8d87ef9e86eb0cf9bda0b1c90970bda354176edaa39d0436b3d3910a9ae"
   },
   "extras": {
@@ -25,7 +25,7 @@
     "tpex_valuation": "ok",
     "twse_industry": "ok",
     "tpex_industry": "ok",
-    "twse_index": "failed:RemoteError",
+    "twse_index": "ok",
     "twse_turnover": "ok",
     "tpex_index": "ok",
     "taifex_futures": "ok",
@@ -58,9 +58,9 @@
     "raw_TPEX.json": "d5cda8bd3a107774c16482dd315db30ab1ca3b39a59277239a25401306815e8a",
     "quotes.csv": "de4bf8d87ef9e86eb0cf9bda0b1c90970bda354176edaa39d0436b3d3910a9ae",
     "extras.csv": "faf4f8d21b34cffc8a13d1b0eb99248dbe0c71e1097071018bed1cf4f8c4c161",
-    "context.json": "00d9c8358b41e2fa24916efe70d61719834b5793973dc8a933ee72f7216f8598",
-    "claude-prompt.md": "4cafbb478e21a05ccc7e5abbdb246a1075f2425d1e02a227c0351a0dc79565ac",
-    "facts.md": "05601172deb688f28407e1e34a2857c02924a26b373ddf294719b714ae16d424"
+    "context.json": "0f7cd059670be60d9237445b71a639f17e4e087bf6a9ba11540a954ae046b180",
+    "claude-prompt.md": "182873d32e567ba8806449506125a6145d35ba3f70988e626bd4196b3a1a5fd4",
+    "facts.md": "d78660aebef1704d5828ae9515e3f60c56eee616c4e1bedd90662727fcca78a3"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }
