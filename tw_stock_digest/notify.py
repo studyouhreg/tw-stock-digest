@@ -28,6 +28,7 @@ TAIPEI = ZoneInfo('Asia/Taipei')
 DIGEST_LABEL, ALERT_LABEL = 'digest', 'digest-alert'
 LABELS = {DIGEST_LABEL: ('1f6feb', '每日盤後摘要'), ALERT_LABEL: ('d73a4a', '資料收集問題')}
 TITLE_PREFIX = '臺股盤後 '
+BODY_LIMIT = 60000
 FINISHED_ANALYSIS = ('generated', 'cached')
 
 
@@ -63,8 +64,12 @@ class Issues:
 
 
 def digest_ready(latest, now):
-    """Publish once flows and valuation are in, or at 07:00 the next day regardless."""
-    if latest.get('extras_complete', True):
+    """Publish once flows, valuation and the indices are in, or at 07:00 the next day regardless.
+
+    Sources that are published later in the evening (margin, lending) do not
+    hold the push back; they are added to the same issue when they arrive.
+    """
+    if latest.get('core_complete', latest.get('extras_complete', True)):
         return True
     cutoff = dt.datetime.combine(dt.date.fromisoformat(latest['trade_date']) + dt.timedelta(days=1),
                                  dt.time(7, 0), TAIPEI)
@@ -86,11 +91,15 @@ def digest_issue(archive, day, *, owner, file_base):
     if manifest.get('analysis') in FINISHED_ANALYSIS:
         analysis = (folder / 'analysis.md').read_text(encoding='utf-8')
         lines += ['', '---', '', analysis.split('\n', 1)[1].strip() if analysis.startswith('# ') else analysis.strip()]
-    # The key points are already above; continue with the tables.
-    marker = '\n## 市場概況'
-    rest = facts[facts.index(marker):].strip() if marker in facts else facts.strip()
+    # The key points are already above; continue with the sections that follow them.
+    after = facts.split('\n## 今日重點', 1)[-1]
+    rest = after[after.index('\n## '):].strip() if '\n## ' in after else facts.strip()
     lines += ['', '---', '', rest]
-    return head['title'], '\n'.join(lines) + '\n'
+    body = '\n'.join(lines) + '\n'
+    if len(body) > BODY_LIMIT:  # GitHub rejects issue bodies above 65,536 characters
+        cut = body.rfind('\n## ', 0, BODY_LIMIT)
+        body = body[:cut if cut > 0 else BODY_LIMIT].rstrip() + '\n\n（內容過長，其餘段落請看上方「完整摘要」連結。）\n'
+    return head['title'], body
 
 
 def alert_issue(failed, run_url, owner=''):

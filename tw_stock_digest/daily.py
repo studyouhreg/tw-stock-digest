@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from . import backfill
 from .http import HttpClient, RemoteError, persistent_json
+from .auxiliary import fetch_auxiliary
 from .insights import fetch_extras
 from .market import SOURCES, parse_date
 from .pipeline import already_saved, json_bytes, run, saved_latest, write
@@ -92,7 +93,8 @@ def live_sources(http=None):
 
 
 def collect_pending(output, watchlist, *, archive_root=None, snapshot=None, report=None, holidays=None,
-                    extras=None, only=None, now=None, analysis_requested=False, configure_remote=None):
+                    extras=None, auxiliary=None, only=None, now=None, analysis_requested=False,
+                    configure_remote=None):
     """Collect every pending day. Returns a summary that is also written to run.json.
 
     ``snapshot(market)`` returns an exchange's latest-snapshot rows and
@@ -106,6 +108,7 @@ def collect_pending(output, watchlist, *, archive_root=None, snapshot=None, repo
     if snapshot is None:
         snapshot, report, holidays = live_sources()
         extras = extras or fetch_extras
+        auxiliary = auxiliary or fetch_auxiliary
     snapshots, notes = {}, {}
     for market in SOURCES:
         try:
@@ -145,7 +148,7 @@ def collect_pending(output, watchlist, *, archive_root=None, snapshot=None, repo
         note = ' '.join(REPORT_NOTES[m] for m in SOURCES if used[m] != SOURCES[m]) or None
         try:
             state = run(iso, output, watchlist, fetch=rows.__getitem__, archive_root=archive_root,
-                        sources=used, source_note=note, extras=extras,
+                        sources=used, source_note=note, extras=extras, auxiliary=auxiliary,
                         configure_remote=configure_remote, analysis_requested=analysis_requested)
         except Exception:
             # run() already recorded the stage and error type; later days still get their turn.

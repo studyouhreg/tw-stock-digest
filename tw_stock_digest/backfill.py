@@ -21,8 +21,10 @@ import re
 import sys
 import time
 
+from .auxiliary import fetch_auxiliary
 from .http import HttpClient, RemoteError, persistent_json
-from .insights import fetch_extras
+from .insights import SOURCE_FIELDS, fetch_extras, read_csv, read_saved_extras
+from .market import FIELDS
 from .pipeline import run
 
 URLS = {
@@ -114,6 +116,40 @@ def fetcher(day, *, http=None, sleep=time.sleep):
     return fetch
 
 
+REBUILT = 'Rebuilt from the saved quotes to add supplementary data.'
+GUARDED = ('=', '+', '-', '@', '\t', '\r')
+
+
+def saved_fetcher(day_dir):
+    """The day's saved quotes in the snapshot API's shape, to rebuild a day without downloading it again."""
+    saved = read_csv(Path(day_dir) / 'quotes.csv')
+
+    def fetch(market):
+        mapping, rows = FIELDS[market], []
+        for r in saved:
+            if r['market'] != market:
+                continue
+            name = r['name']
+            if name[:1] == "'" and name[1:2] in GUARDED:
+                name = name[1:]  # undo the spreadsheet guard quotes.csv adds
+            row = {'Date': r['trade_date'], mapping['symbol']: r['symbol'], mapping['name']: name}
+            row.update({mapping[f]: r[f] for f in ('open', 'high', 'low', 'close', 'change', 'volume_shares',
+                                                   'turnover_twd', 'trades')})
+            rows.append(row)
+        return rows
+    return fetch
+
+
+def saved_extras(day_dir):
+    """Flows and valuation as saved; fetched again only if the saved day lacks one of them."""
+    def extras(trade_date):
+        rows, status = read_saved_extras(day_dir)
+        if all(status.get(source) == 'ok' for source in SOURCE_FIELDS):
+            return rows, status
+        return fetch_extras(trade_date)
+    return extras
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='用證交所／櫃買中心的逐日報表補回漏掉的交易日')
     parser.add_argument('--date', type=dt.date.fromisoformat, action='append', required=True,
@@ -122,22 +158,37 @@ def main(argv=None):
     parser.add_argument('--repo-dir', type=Path, default=Path('data'))
     parser.add_argument('--raw-dir', type=Path,
                         help='重建單日時改用該次正式執行保存的 TWSE.json／TPEX.json（Actions artifact 的 raw/）')
+    parser.add_argument('--reuse-quotes', action='store_true',
+                        help='不重新下載行情：用該日已保存的 quotes.csv 重建，只補上輔助資料與重算指標')
+    parser.add_argument('--no-aux', action='store_true', help='不抓輔助資料（大量補歷史行情時較快）')
     parser.add_argument('--watchlist', default=os.getenv('WATCHLIST', '0050,2330,2317,2454,6488'))
     args = parser.parse_args(argv)
     watchlist = [s.strip().upper() for s in args.watchlist.split(',') if s.strip()]
-    if args.raw_dir and len(args.date) != 1:
-        parser.error('--raw-dir rebuilds exactly one --date')
+    if args.raw_dir and (len(args.date) != 1 or args.reuse_quotes):
+        parser.error('--raw-dir rebuilds exactly one --date and cannot be combined with --reuse-quotes')
     failed = 0
     for day in sorted(args.date):
         try:
+            options = dict(extras=fetch_extras)
             if args.raw_dir:
                 # The original snapshot API responses: same data as the live run.
                 fetch = lambda market: json.loads((args.raw_dir / f'{market}.json').read_text(encoding='utf-8'))
-                options = {}
+            elif args.reuse_quotes:
+                saved = args.repo_dir / 'daily' / day.isoformat()
+                manifest = json.loads((saved / 'manifest.json').read_text(encoding='utf-8'))
+                if manifest.get('rejected_rows'):
+                    raise ValueError('saved day has rejected rows; rebuild it without --reuse-quotes')
+                note = manifest.get('source_note') or ''
+                fetch = saved_fetcher(saved)
+                options = dict(extras=saved_extras(saved), sources=manifest['sources'],
+                               source_note=note if REBUILT in note else f'{note} {REBUILT}'.strip())
             else:
-                fetch, options = fetcher(day), dict(sources=URLS, source_note=NOTE)
+                fetch = fetcher(day)
+                options.update(sources=URLS, source_note=NOTE)
+            if not args.no_aux:
+                options['auxiliary'] = fetch_auxiliary
             state = run(day.isoformat(), args.output / 'backfill', watchlist, fetch=fetch,
-                        archive_root=args.repo_dir, extras=fetch_extras, **options)
+                        archive_root=args.repo_dir, **options)
             print(day, state['status'], state.get('reason', ''), state.get('row_count', ''), flush=True)
             failed += state['status'] != 'complete'
         except Exception as exc:  # report and continue with the next day

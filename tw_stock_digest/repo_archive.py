@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import tempfile
 
-from .insights import extras_complete
+from .insights import core_complete, extras_complete
 
 FILES = {'quotes.csv', 'context.json', 'facts.md', 'claude-prompt.md', 'analysis.json', 'analysis.md'}
 RAW_FILES = {'raw_TWSE.json', 'raw_TPEX.json'}
@@ -128,6 +128,7 @@ def publish_snapshot(day, archive, report, analysis):
                       demo=False, report_sha256=digest(report))
         if 'extras' in manifest:
             latest['extras_complete'] = extras_complete(manifest['extras'])
+            latest['core_complete'] = core_complete(manifest['extras'])
         atomic_write(archive / 'latest.md', report)
         atomic_write(archive / 'latest.json', encoded(latest))
 

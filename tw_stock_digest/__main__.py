@@ -96,7 +96,10 @@ def summary_markdown(summary):
         lines += ['| 交易日 | 結果 | 說明 |', '|---|---|---|']
         for day in summary['days']:
             if day['status'] == 'complete':
-                detail = f"{day.get('row_count')} 檔；法人與估值{'完整' if day.get('extras_complete') else '尚未齊全，下次排程補'}"
+                pending = [name for name, v in (day.get('extras') or {}).items()
+                           if v not in ('ok', 'demo', 'not_requested', 'unavailable')]
+                detail = f"{day.get('row_count')} 檔；" + (
+                    '法人、估值與輔助資料完整' if not pending else '尚未齊全，下次排程補：' + '、'.join(pending))
             elif day['status'] == 'skipped':
                 detail = SKIP_MESSAGES.get(day.get('reason'), '略過')
             else:
