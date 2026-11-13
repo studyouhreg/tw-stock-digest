@@ -14,6 +14,7 @@
 | `analysis-cache-*.json` | 成功的 Claude 分析快取，供同一輸入重跑時重用 |
 | `manifest.json` | 來源、抓取時間、筆數、保存檔案校驗碼與原始來源校驗碼 |
 | `latest.md`、`latest.json` | 最近保存的交易日摘要；請同時留意分析狀態 |
+| `dashboard.json` | 網頁儀表板（`docs/index.html`）讀取的精簡時間序列 |
 
 原始 `raw_TWSE.json`、`raw_TPEX.json` 不放進 git，可從對應 Actions 執行的 artifact 下載（保留 14 日）；設定 Drive 後也會存到 Drive。`manifest.json` 的 `files_sha256` 只列本目錄實際保存檔案；`source_files_sha256` 記錄原始收集檔案。
 

@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>臺股盤後儀表板</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --up: #d03b3b; --down: #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --up: #e66767; --down: #0ca30c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 56px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; font-weight: 650; }
+h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+.sub { color: var(--ink-2); font-size: 13px; }
+a { color: inherit; text-underline-offset: 3px; }
+.links { margin-left: auto; display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.tile .label { color: var(--ink-2); font-size: 12.5px; }
+.tile .value { font-size: 24px; font-weight: 650; line-height: 1.25; margin-top: 2px; }
+.tile .value small { font-size: 13px; font-weight: 500; color: var(--ink-2); margin-left: 3px; }
+.tile .delta { font-size: 12.5px; color: var(--ink-2); min-height: 19px; }
+.tile svg { display: block; margin-top: 6px; width: 100%; height: 28px; }
+.up { color: var(--up); } .down { color: var(--down); }
+.filters { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 13px; color: var(--ink-2); }
+.filters button { font: inherit; color: var(--ink-2); background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+.filters button[aria-pressed="true"] { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+.filters button:focus-visible, .chart svg:focus-visible, summary:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .charts { grid-template-columns: minmax(0, 1fr); } .links { margin-left: 0; width: 100%; } }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; margin-top: 8px; touch-action: pan-y; }
+.chart text { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart text.end { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 4px; }
+.key { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; border-radius: 1px; }
+.tip { position: absolute; pointer-events: none; z-index: 2; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.12); white-space: nowrap; display: none; }
+.tip .when { color: var(--ink-2); margin-bottom: 2px; }
+.tip b { font-weight: 650; font-variant-numeric: tabular-nums; }
+.tip span { color: var(--ink-2); }
+.block { margin-top: 12px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 500; font-size: 12px; }
+th:first-child, td:first-child, td.name, th.name { text-align: left; }
+td svg { display: block; width: 96px; height: 24px; }
+ul.points { margin: 6px 0 0; padding-left: 18px; columns: 2 380px; column-gap: 40px; }
+ul.points li { margin: 0 0 6px; break-inside: avoid; }
+.note { color: var(--ink-2); font-size: 12.5px; margin-top: 8px; }
+details { margin-top: 12px; }
+summary { cursor: pointer; font-size: 13px; color: var(--ink-2); }
+footer { margin-top: 28px; color: var(--muted); font-size: 12px; }
+#state { padding: 40px 0; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>臺股盤後儀表板</h1>
+    <span class="sub" id="asof"></span>
+    <nav class="links"><a id="link-digest" href="#">完整摘要</a><a id="link-issues" href="#">每日推播</a><a id="link-repo" href="#">原始碼</a></nav>
+  </header>
+  <div id="state">載入資料中…</div>
+  <div id="app" hidden>
+    <section class="tiles" id="tiles" aria-label="最新數字"></section>
+    <div class="filters" role="group" aria-label="圖表期間"><span>期間</span>
+      <button type="button" data-range="20">近 20 日</button><button type="button" data-range="60">近 60 日</button><button type="button" data-range="0">全部</button>
+    </div>
+    <section class="charts" id="charts"></section>
+    <section class="card block"><h2>自選股</h2><div class="sub" id="watch-sub"></div><div class="scroll"><table id="watch"></table></div></section>
+    <section class="card block"><h2>今日重點</h2><ul class="points" id="points"></ul><div class="note" id="pending"></div></section>
+    <details class="card"><summary>圖表資料表（所有交易日）</summary><div class="scroll"><table id="datatable"></table></div></details>
+    <footer>資料來自證交所、櫃買中心、期交所、集保結算所與公開資訊觀測站，由程式整理；金額為近似值，僅供研究參考，不構成投資建議。<span id="generated"></span></footer>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var SVG = 'http://www.w3.org/2000/svg';
+  var host = location.hostname.split('.'), parts = location.pathname.split('/').filter(Boolean);
+  var onPages = host.length === 3 && host[1] === 'github' && host[2] === 'io' && parts.length > 0;
+  var owner = onPages ? host[0] : 'studyouhreg', repo = onPages ? parts[0] : 'tw-stock-digest';
+  var repoUrl = 'https://github.com/' + owner + '/' + repo;
+  var dataUrl = new URLSearchParams(location.search).get('data') ||
+    'https://raw.githubusercontent.com/' + owner + '/' + repo + '/main/data/dashboard.json';
+  var $ = function (id) { return document.getElementById(id); };
+  $('link-digest').href = repoUrl + '/blob/main/data/latest.md';
+  $('link-issues').href = repoUrl + '/issues?q=label%3Adigest';
+  $('link-repo').href = repoUrl;
+
+  function el(name, attrs, text) {
+    var svg = ['svg', 'g', 'path', 'line', 'rect', 'circle', 'text', 'polyline'].indexOf(name) >= 0;
+    var node = svg ? document.createElementNS(SVG, name) : document.createElement(name);
+    for (var key in attrs || {}) node.setAttribute(key, attrs[key]);
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+  function fmt(value, digits) {
+    if (value === null || value === undefined) return '—';
+    return value.toLocaleString('en-US', { minimumFractionDigits: digits || 0, maximumFractionDigits: digits || 0 });
+  }
+  function signed(value, digits) { return value === null || value === undefined ? '—' : (value > 0 ? '+' : '') + fmt(value, digits); }
+  function short(date) { return date.slice(5).replace('-', '/'); }
+  function lastWith(days, key) {
+    for (var i = days.length - 1; i >= 0; i--) if (days[i][key] !== null && days[i][key] !== undefined) return i;
+    return -1;
+  }
+  function ticks(min, max, count) {
+    if (min === max) { min -= 1; max += 1; }
+    var raw = (max - min) / count, power = Math.pow(10, Math.floor(Math.log10(raw))), unit = raw / power;
+    var step = (unit >= 5 ? 10 : unit >= 2 ? 5 : unit >= 1 ? 2 : 1) * power;
+    var out = [];
+    for (var v = Math.floor(min / step) * step; v <= max + step * 0.999; v += step) out.push(Math.round(v / step) * step);
+    return out;
+  }
+  function axisLabel(value, span) {
+    if (value === 0) return '0';
+    if (span >= 20000) return (value / 1000).toLocaleString('en-US') + 'K';
+    return value.toLocaleString('en-US', { maximumFractionDigits: span < 5 ? 2 : span < 50 ? 1 : 0 });
+  }
+  function path(points) {
+    var d = '', pen = false;
+    points.forEach(function (p) {
+      if (!p) { pen = false; return; }
+      d += (pen ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1);
+      pen = true;
+    });
+    return d;
+  }
+  function sparkline(values, color) {
+    var svg = el('svg', { viewBox: '0 0 100 28', preserveAspectRatio: 'none', 'aria-hidden': 'true' });
+    var present = values.filter(function (v) { return v !== null && v !== undefined; });
+    if (present.length < 2) return svg;
+    var min = Math.min.apply(null, present), max = Math.max.apply(null, present), span = max - min || 1;
+    var points = values.map(function (v, i) {
+      return v === null || v === undefined ? null : [i * 100 / (values.length - 1), 25 - (v - min) * 22 / span];
+    });
+    svg.appendChild(el('path', { d: path(points), fill: 'none', stroke: color || 'var(--muted)', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round' }));
+    return svg;
+  }
+
+  var TILES = [
+    { key: 'taiex', label: '加權指數', digits: 2, delta: function (d) { return pct(d.taiex_pct); } },
+    { key: 'tpex', label: '櫃買指數', digits: 2, delta: function (d) { return pct(d.tpex_pct); } },
+    { key: 'turnover', label: '上市成交金額', unit: '億', digits: 0, delta: change('turnover', 0, '億') },
+    { key: 'foreign', label: '外資買賣超', unit: '億', digits: 0, sign: true, tone: true },
+    { key: 'trust', label: '投信買賣超', unit: '億', digits: 0, sign: true, tone: true },
+    { key: 'futures_foreign', label: '外資期貨未平倉淨額', unit: '口', digits: 0, sign: true, delta: change('futures_foreign', 0, '口') },
+    { key: 'put_call', label: 'Put/Call 未平倉比', unit: '%', digits: 1, delta: change('put_call', 1, ' 個百分點') },
+    { key: 'margin', label: '上市融資餘額', unit: '億', digits: 0, delta: change('margin', 1, '億') },
+    { key: 'above_ma20', label: '站上 20 日均線', unit: '%', digits: 1, delta: change('above_ma20', 1, ' 個百分點') }
+  ];
+  function tone(value) { return value > 0 ? 'up' : value < 0 ? 'down' : ''; }
+  function arrow(value) { return value > 0 ? '▲ ' : value < 0 ? '▼ ' : ''; }
+  function pct(value) {
+    if (value === null || value === undefined) return null;
+    return { text: arrow(value) + signed(value, 2) + '%', cls: tone(value) };
+  }
+  function change(key, digits, unit) {
+    return function (day, previous) {
+      if (!previous || previous[key] === null || previous[key] === undefined) return null;
+      var diff = day[key] - previous[key];
+      return { text: '較前一日 ' + arrow(diff) + signed(diff, digits) + unit, cls: '' };
+    };
+  }
+  function renderTiles(days) {
+    var box = $('tiles');
+    box.textContent = '';
+    TILES.forEach(function (tile) {
+      var i = lastWith(days, tile.key);
+      if (i < 0) return;
+      var day = days[i], previous = days[i - 1], card = el('div', { class: 'card tile' });
+      var stale = i < days.length - 1 ? '（' + short(day.date) + '）' : '';
+      card.appendChild(el('div', { class: 'label' }, tile.label + stale));
+      var value = el('div', { class: 'value' + (tile.tone ? ' ' + tone(day[tile.key]) : '') },
+        tile.sign ? signed(day[tile.key], tile.digits) : fmt(day[tile.key], tile.digits));
+      if (tile.unit) value.appendChild(el('small', {}, tile.unit));
+      card.appendChild(value);
+      var delta = tile.delta ? tile.delta(day, previous) : null;
+      card.appendChild(el('div', { class: 'delta' + (delta && delta.cls ? ' ' + delta.cls : '') }, delta ? delta.text : ''));
+      card.appendChild(sparkline(days.slice(Math.max(0, i - 19), i + 1).map(function (d) { return d[tile.key]; })));
+      box.appendChild(card);
+    });
+  }
+
+  var CHARTS = [
+    { title: '加權指數', sub: '收盤', digits: 2, series: [{ name: '加權指數', key: 'taiex', color: 'var(--s1)' }] },
+    { title: '上市成交金額', sub: '億元', digits: 0, type: 'column', zero: true, series: [{ name: '成交金額', key: 'turnover', color: 'var(--s1)' }] },
+    { title: '三大法人累計買賣超', sub: '億元，自期間第一天起累計（買賣超股數 × 收盤價的近似值）', digits: 0, cumulative: true, zero: true,
+      series: [{ name: '外資', key: 'foreign', color: 'var(--s1)' }, { name: '投信', key: 'trust', color: 'var(--s2)' }, { name: '自營商', key: 'dealer', color: 'var(--s3)' }] },
+    { title: '外資臺股期貨未平倉淨額', sub: '口；負值為淨空單', digits: 0, series: [{ name: '未平倉淨額', key: 'futures_foreign', color: 'var(--s1)' }] },
+    { title: '上市融資餘額', sub: '億元', digits: 0, series: [{ name: '融資餘額', key: 'margin', color: 'var(--s1)' }] },
+    { title: '站上 20 日均線的股票比例', sub: '%，日成交金額 ≥ 2,000 萬的股票', digits: 1, domain: [0, 100], series: [{ name: '比例', key: 'above_ma20', color: 'var(--s1)' }] }
+  ];
+  function seriesValues(chart, days) {
+    return chart.series.map(function (s) {
+      var total = 0, started = false;
+      return days.map(function (d) {
+        var v = d[s.key];
+        if (v === null || v === undefined) return chart.cumulative && started ? total : null;
+        if (!chart.cumulative) return v;
+        started = true;
+        total += v;
+        return Math.round(total * 100) / 100;
+      });
+    });
+  }
+  function drawChart(card, chart, days) {
+    var values = seriesValues(chart, days), all = [].concat.apply([], values).filter(function (v) { return v !== null; });
+    var old = card.querySelector('svg'), tip = card.querySelector('.tip'), empty = card.querySelector('.note');
+    if (old) old.remove();
+    if (empty) empty.remove();
+    if (all.length < 2) {
+      card.appendChild(el('div', { class: 'note' }, '這段期間還沒有足夠的資料。'));
+      return;
+    }
+    var endLabel = chart.series.length === 1 && chart.type !== 'column' ? fmt(all[all.length - 1], chart.digits) : '';
+    var width = Math.max(280, card.clientWidth - 34), height = 210, left = 46, right = endLabel ? 16 + endLabel.length * 7.5 : 14, top = 12, bottom = 24;
+    var min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+    if (chart.zero) { min = Math.min(min, 0); max = Math.max(max, 0); }
+    if (chart.domain) { min = chart.domain[0]; max = chart.domain[1]; }
+    var marks = ticks(min, max, 4);
+    min = Math.min(min, marks[0]); max = Math.max(max, marks[marks.length - 1]);
+    var n = days.length, plotW = width - left - right, plotH = height - top - bottom, band = plotW / n;
+    var x = function (i) { return left + band * (i + 0.5); };
+    var y = function (v) { return top + plotH - (v - min) * plotH / (max - min); };
+    var svg = el('svg', { viewBox: '0 0 ' + width + ' ' + height, height: height, role: 'img', tabindex: 0,
+      'aria-label': chart.title + '，' + short(days[0].date) + ' 至 ' + short(days[n - 1].date) + '；方向鍵可逐日讀值，完整數字見下方資料表' });
+    marks.forEach(function (mark) {
+      svg.appendChild(el('line', { x1: left, x2: width - right, y1: y(mark), y2: y(mark), stroke: mark === 0 && min < 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }));
+      svg.appendChild(el('text', { x: left - 8, y: y(mark) + 4, 'text-anchor': 'end' }, axisLabel(mark, max - min)));
+    });
+    [0, Math.floor((n - 1) / 2), n - 1].filter(function (v, i, a) { return a.indexOf(v) === i; }).forEach(function (i) {
+      svg.appendChild(el('text', { x: x(i), y: height - 6, 'text-anchor': i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle' }, short(days[i].date)));
+    });
+    var crosshair = el('line', { y1: top, y2: top + plotH, stroke: 'var(--axis)', 'stroke-width': 1, visibility: 'hidden' });
+    svg.appendChild(crosshair);
+    var dots = [];
+    values.forEach(function (list, s) {
+      var color = chart.series[s].color;
+      if (chart.type === 'column') {
+        var w = Math.max(1, Math.min(24, band - 2));
+        list.forEach(function (v, i) {
+          if (v === null) return;
+          var h = Math.max(1, y(0) - y(v)), r = Math.min(4, w / 2, h);
+          svg.appendChild(el('path', { fill: color, d: 'M' + (x(i) - w / 2) + ' ' + y(0) + 'v' + (-(h - r)) + 'q0 ' + (-r) + ' ' + r + ' ' + (-r) + 'h' + (w - 2 * r) + 'q' + r + ' 0 ' + r + ' ' + r + 'v' + (h - r) + 'z' }));
+        });
+      } else {
+        svg.appendChild(el('path', { d: path(list.map(function (v, i) { return v === null ? null : [x(i), y(v)]; })), fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+        var last = -1;
+        list.forEach(function (v, i) { if (v !== null) last = i; });
+        if (last >= 0) {
+          svg.appendChild(el('circle', { cx: x(last), cy: y(list[last]), r: 4, fill: color, stroke: 'var(--surface)', 'stroke-width': 2 }));
+          if (chart.series.length === 1) svg.appendChild(el('text', { class: 'end', x: x(last) + 9, y: y(list[last]) + 4 }, fmt(list[last], chart.digits)));
+        }
+        var dot = el('circle', { r: 4, fill: color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' });
+        svg.appendChild(dot);
+        dots[s] = dot;
+      }
+    });
+    function show(i) {
+      crosshair.setAttribute('x1', x(i)); crosshair.setAttribute('x2', x(i)); crosshair.setAttribute('visibility', 'visible');
+      tip.textContent = '';
+      tip.appendChild(el('div', { class: 'when' }, days[i].date));
+      values.forEach(function (list, s) {
+        var row = el('div'), key = el('i', { class: 'key' });
+        key.style.borderTopColor = chart.series[s].color;
+        row.appendChild(key);
+        row.appendChild(el('b', {}, list[i] === null ? '—' : (chart.cumulative ? signed(list[i], chart.digits) : fmt(list[i], chart.digits))));
+        row.appendChild(el('span', {}, ' ' + chart.series[s].name));
+        tip.appendChild(row);
+        if (dots[s]) {
+          dots[s].setAttribute('visibility', list[i] === null ? 'hidden' : 'visible');
+          if (list[i] !== null) { dots[s].setAttribute('cx', x(i)); dots[s].setAttribute('cy', y(list[i])); }
+        }
+      });
+      tip.style.display = 'block';
+      var box = svg.getBoundingClientRect(), frame = card.getBoundingClientRect();
+      var px = box.left - frame.left + x(i) * box.width / width;
+      var flip = px + tip.offsetWidth + 16 > card.clientWidth;
+      tip.style.left = Math.max(4, flip ? px - tip.offsetWidth - 10 : px + 10) + 'px';
+      tip.style.top = (box.top - frame.top + top) + 'px';
+      svg.dataset.index = i;
+    }
+    function hide() {
+      crosshair.setAttribute('visibility', 'hidden');
+      dots.forEach(function (dot) { if (dot) dot.setAttribute('visibility', 'hidden'); });
+      tip.style.display = 'none';
+    }
+    svg.addEventListener('pointermove', function (event) {
+      var box = svg.getBoundingClientRect(), px = (event.clientX - box.left) * width / box.width;
+      show(Math.max(0, Math.min(n - 1, Math.floor((px - left) / band))));
+    });
+    svg.addEventListener('pointerleave', hide);
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('focus', function () { show(n - 1); });
+    svg.addEventListener('keydown', function (event) {
+      var step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0;
+      if (!step) return;
+      event.preventDefault();
+      show(Math.max(0, Math.min(n - 1, Number(svg.dataset.index || n - 1) + step)));
+    });
+    card.appendChild(svg);
+  }
+  function renderCharts(days) {
+    var box = $('charts');
+    if (!box.children.length) {
+      CHARTS.forEach(function (chart) {
+        var card = el('div', { class: 'card chart' });
+        card.appendChild(el('h2', {}, chart.title));
+        card.appendChild(el('div', { class: 'sub' }, chart.sub));
+        if (chart.series.length > 1) {
+          var legend = el('div', { class: 'legend' });
+          chart.series.forEach(function (s) {
+            var item = el('span'), key = el('i', { class: 'key' });
+            key.style.borderTopColor = s.color;
+            item.appendChild(key);
+            item.appendChild(document.createTextNode(s.name));
+            legend.appendChild(item);
+          });
+          card.appendChild(legend);
+        }
+        card.appendChild(el('div', { class: 'tip', role: 'status' }));
+        box.appendChild(card);
+      });
+    }
+    CHARTS.forEach(function (chart, i) { drawChart(box.children[i], chart, days); });
+  }
+
+  function renderWatchlist(data) {
+    var table = $('watch'), head = el('tr');
+    table.textContent = '';
+    var window = data.window_days ? data.window_days + ' 日' : '累計';
+    [['代碼', ''], ['名稱', 'name'], ['收盤', ''], ['漲跌 %', ''], ['走勢', 'name'], ['本益比', ''], ['外資 ' + window + '（億）', ''],
+     ['投信 ' + window + '（億）', ''], ['RSI(14)', ''], ['K / D', ''], ['20 日乖離 %', '']].forEach(function (h) {
+      head.appendChild(el('th', h[1] ? { class: h[1] } : {}, h[0]));
+    });
+    table.appendChild(head);
+    data.watchlist.forEach(function (w) {
+      var row = el('tr');
+      row.appendChild(el('td', {}, w.symbol));
+      row.appendChild(el('td', { class: 'name' }, w.name));
+      row.appendChild(el('td', {}, fmt(w.close, w.close < 100 ? 2 : w.close < 1000 ? 1 : 0)));
+      row.appendChild(el('td', { class: tone(w.change_pct) }, w.change_pct === null ? '—' : arrow(w.change_pct) + signed(w.change_pct, 2)));
+      var spark = el('td', { class: 'name' });
+      spark.appendChild(sparkline(w.closes.slice(-60).map(function (c) { return c[1]; }), 'var(--s1)'));
+      row.appendChild(spark);
+      row.appendChild(el('td', {}, fmt(w.pe, 1)));
+      row.appendChild(el('td', {}, signed(w.foreign_window, 1)));
+      row.appendChild(el('td', {}, signed(w.trust_window, 1)));
+      row.appendChild(el('td', {}, fmt(w.rsi14, 1)));
+      row.appendChild(el('td', {}, w.k9 === null || w.k9 === undefined ? '—' : fmt(w.k9, 0) + ' / ' + fmt(w.d9, 0)));
+      row.appendChild(el('td', {}, signed(w.bias20, 2)));
+      table.appendChild(row);
+    });
+    $('watch-sub').textContent = data.latest + ' 收盤；走勢為最近 60 個已保存交易日的收盤價';
+  }
+  function renderDataTable(days) {
+    var table = $('datatable'), head = el('tr');
+    var columns = [['date', '日期'], ['taiex', '加權指數', 2], ['taiex_pct', '漲跌 %', 2], ['turnover', '成交金額（億）', 0], ['tpex', '櫃買指數', 2],
+      ['advancers', '上市上漲', 0], ['decliners', '上市下跌', 0], ['foreign', '外資（億）', 2], ['trust', '投信（億）', 2], ['dealer', '自營商（億）', 2],
+      ['futures_foreign', '外資期貨淨額（口）', 0], ['put_call', 'P/C 未平倉比 %', 2], ['margin', '融資餘額（億）', 2], ['above_ma20', '站上 20 日均線 %', 1]];
+    table.textContent = '';
+    columns.forEach(function (c) { head.appendChild(el('th', {}, c[1])); });
+    table.appendChild(head);
+    days.slice().reverse().forEach(function (day) {
+      var row = el('tr');
+      columns.forEach(function (c) { row.appendChild(el('td', {}, c[0] === 'date' ? day.date : fmt(day[c[0]], c[2]))); });
+      table.appendChild(row);
+    });
+  }
+
+  var state = { data: null, range: 60 };
+  function visibleDays() { return state.range ? state.data.days.slice(-state.range) : state.data.days; }
+  function renderRange() {
+    document.querySelectorAll('.filters button').forEach(function (button) {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.range) === state.range));
+    });
+    renderCharts(visibleDays());
+  }
+  function render(data) {
+    state.data = data;
+    try { state.range = Number(localStorage.getItem('range') || 60); } catch (error) { state.range = 60; }
+    if ([20, 60, 0].indexOf(state.range) < 0) state.range = 60;
+    $('asof').textContent = (data.headline.title || '').replace('臺股盤後 ', '');
+    document.title = '臺股盤後 ' + data.latest;
+    $('state').hidden = true;
+    $('app').hidden = false;
+    renderTiles(data.days);
+    renderWatchlist(data);
+    var points = $('points');
+    points.textContent = '';
+    data.headline.points.forEach(function (point) { points.appendChild(el('li', {}, point)); });
+    $('pending').textContent = data.pending.length ? '收集時尚未公布：' + data.pending.join('、') + '；之後的排程會補上。' : '';
+    $('generated').textContent = ' 資料產生時間（UTC）：' + data.generated_at_utc.replace('T', ' ').slice(0, 16);
+    renderDataTable(data.days);
+    renderRange();
+  }
+  document.querySelectorAll('.filters button').forEach(function (button) {
+    button.addEventListener('click', function () {
+      state.range = Number(button.dataset.range);
+      try { localStorage.setItem('range', String(state.range)); } catch (error) { /* private mode */ }
+      renderRange();
+    });
+  });
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (state.data) renderCharts(visibleDays()); }, 150);
+  });
+  fetch(dataUrl, { cache: 'no-cache' }).then(function (response) {
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return response.json();
+  }).then(render).catch(function (error) {
+    $('state').textContent = '讀不到儀表板資料（' + error.message + '）。可以直接看 ';
+    $('state').appendChild(el('a', { href: repoUrl + '/blob/main/data/latest.md' }, '最新摘要'));
+  });
+})();
+</script>
+</body>
+</html>
