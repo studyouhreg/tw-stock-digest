@@ -45,8 +45,15 @@ URLS = {
     'twse_industry': 'https://openapi.twse.com.tw/v1/opendata/t187ap03_L',
     'tpex_industry': 'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O',
 }
-EXTRA_FIELDS = ('industry', 'pe', 'pb', 'dividend_yield', 'foreign', 'trust', 'dealer')
+# Columns of extras.csv. The second group is filled by ``auxiliary`` (margin and short
+# balances in lots, securities-lending short balance in lots, day-traded shares, and the
+# share of the company held in accounts of at least 400 and 1,000 lots).
+AUX_FIELDS = ('margin', 'margin_change', 'short', 'short_change', 'sbl', 'sbl_change', 'daytrade',
+              'big400_pct', 'big1000_pct', 'holders')
+EXTRA_FIELDS = ('industry', 'pe', 'pb', 'dividend_yield', 'foreign', 'trust', 'dealer') + AUX_FIELDS
+HISTORY_FIELDS = ('foreign', 'trust', 'dealer') + AUX_FIELDS
 FLOW_DAYS, SHARE_DAYS, MFI_DAYS, OBV_DAYS = 5, 20, 14, 10
+HISTORY_DAYS = 80   # enough for 60-day averages and MACD warm-up
 
 
 def num(text):
@@ -164,28 +171,62 @@ def read_saved_extras(day_dir):
         return {}, {}
     extras = {}
     for r in rows:
-        extras[r['symbol']] = {f: (r[f] or None) if f == 'industry' else num(r[f]) for f in EXTRA_FIELDS}
+        extras[r['symbol']] = {f: (r.get(f) or None) if f == 'industry' else num(r.get(f)) for f in EXTRA_FIELDS}
     return extras, status
 
 
-def keep_previous(extras, status, previous, previous_status, market_of):
-    """For each source that failed now but succeeded in the saved snapshot, reuse the saved values."""
+def read_saved_payloads(day_dir):
+    """Market-level auxiliary payloads from an already saved snapshot, or {}."""
+    try:
+        context = json.loads((Path(day_dir) / 'context.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    return context.get('auxiliary') or {}
+
+
+def keep_previous(extras, status, previous, previous_status, market_of, *, fields=None,
+                  payloads=None, previous_payloads=None):
+    """For each source that did not succeed now but had in the saved snapshot, reuse the saved values.
+
+    ``fields`` maps a source to (market or None, per-symbol columns); ``payloads``
+    are the market-level results keyed by source.
+    """
+    fields = SOURCE_FIELDS if fields is None else fields
     kept = []
-    for source, (market, fields) in SOURCE_FIELDS.items():
-        if status.get(source) == 'ok' or previous_status.get(source) != 'ok':
+    for source, earlier in previous_status.items():
+        if earlier != 'ok' or status.get(source) == 'ok':
             continue
-        for symbol, record in previous.items():
-            if market_of.get(symbol, market) == market:
-                values = {f: record.get(f) for f in fields if record.get(f) is not None}
-                if values:
-                    extras.setdefault(symbol, {}).update(values)
-        status[source] = 'ok'
-        kept.append(source)
+        restored = False
+        if source in fields:
+            market, names = fields[source]
+            for symbol, record in previous.items():
+                if market is None or market_of.get(symbol, market) == market:
+                    values = {f: record.get(f) for f in names if record.get(f) is not None}
+                    if values:
+                        extras.setdefault(symbol, {}).update(values)
+            restored = True
+        if payloads is not None and previous_payloads and source in previous_payloads:
+            payloads[source] = previous_payloads[source]
+            restored = True
+        if restored:
+            status[source] = 'ok'
+            kept.append(source)
     return kept
 
 
+CORE_SOURCES = ('twse_flows', 'tpex_flows', 'twse_valuation', 'tpex_valuation', 'twse_industry', 'tpex_industry',
+                'twse_index', 'tpex_index')
+SETTLED = ('ok', 'demo', 'not_requested', 'unavailable')
+
+
+def core_complete(status):
+    """Enough for the digest to be worth pushing: flows, valuation, industries and the indices."""
+    return bool(status) and all(v in SETTLED for name, v in status.items() if name in CORE_SOURCES or name in (
+        'extras', 'all'))
+
+
 def extras_complete(status):
-    return bool(status) and all(v in ('ok', 'demo', 'not_requested') for v in status.values())
+    return bool(status) and all(v in SETTLED for v in status.values())
 
 
 def extras_csv(extras):
@@ -205,11 +246,11 @@ def read_csv(path):
         return list(csv.DictReader(handle))
 
 
-def load_history(root, before, n=SHARE_DAYS + 5):
+def load_history(root, before, n=HISTORY_DAYS):
     """Up to ``n`` saved trading days before ``before``, oldest first.
 
-    Each day is {symbol: row} with numeric fields, plus flows when that day's
-    snapshot has an extras.csv (older snapshots do not).
+    Each day is {symbol: row} with numeric fields, plus flows and the
+    auxiliary per-symbol columns when that day's snapshot has them.
     """
     daily = Path(root) / 'daily'
     if not daily.is_dir():
@@ -227,19 +268,23 @@ def load_history(root, before, n=SHARE_DAYS + 5):
         if has_flows:
             for r in read_csv(daily / name / 'extras.csv'):
                 if r['symbol'] in rows:
-                    rows[r['symbol']].update({f: num(r[f]) for f in ('foreign', 'trust', 'dealer')})
-        days.append(dict(date=name, rows=rows, has_flows=has_flows))
+                    rows[r['symbol']].update({f: num(r.get(f)) for f in HISTORY_FIELDS})
+        try:
+            tdcc_date = json.loads((daily / name / 'manifest.json').read_text(encoding='utf-8')).get('tdcc_date')
+        except (OSError, ValueError):
+            tdcc_date = None
+        days.append(dict(date=name, rows=rows, has_flows=has_flows, tdcc_date=tdcc_date))
     return days
 
 
-def today_day(quotes, extras):
+def today_day(quotes, extras, tdcc_date=None):
     rows = {}
     for q in quotes:
         rows[q['symbol']] = dict(market=q['market'], kind=q['kind'], name=q['name'], open=q['open'],
                                  high=q['high'], low=q['low'], close=q['close'], change_pct=q['change_pct'],
                                  volume_shares=q['volume_shares'], turnover_twd=q['turnover_twd'],
-                                 **{f: extras.get(q['symbol'], {}).get(f) for f in ('foreign', 'trust', 'dealer')})
-    return dict(date=quotes[0]['trade_date'], rows=rows, has_flows=any(
+                                 **{f: extras.get(q['symbol'], {}).get(f) for f in HISTORY_FIELDS})
+    return dict(date=quotes[0]['trade_date'], rows=rows, tdcc_date=tdcc_date, has_flows=any(
         extras.get(s, {}).get('foreign') is not None for s in rows))
 
 
@@ -480,9 +525,12 @@ def money_flow(days, watchlist, top=10, *, min_turnover=50_000_000, surge=2.0):
     return out
 
 
-def compute(quotes, extras, history, watchlist):
-    days = history + [today_day(quotes, extras)]
+def compute_days(days, extras, watchlist):
     return dict(valuation=valuation(days[-1], extras, watchlist),
                 institutions=institutions(days, watchlist),
                 rotation=rotation(days, extras),
                 money_flow=money_flow(days, watchlist))
+
+
+def compute(quotes, extras, history, watchlist):
+    return compute_days(history + [today_day(quotes, extras)], extras, watchlist)

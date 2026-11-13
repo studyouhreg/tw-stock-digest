@@ -8,9 +8,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .analysis import analyze, analysis_key, make_prompt
-from .demo import DEMO_DATE, demo_extras, fetch_demo
-from .insights import (compute as compute_insights, extras_complete, extras_csv, fetch_extras, keep_previous,
-                       load_history, read_saved_extras)
+from .auxiliary import SYMBOL_FIELDS, fetch_auxiliary
+from .demo import DEMO_DATE, demo_auxiliary, demo_extras, fetch_demo
+from .insights import (SOURCE_FIELDS, compute_days, core_complete, extras_complete, extras_csv, fetch_extras,
+                       keep_previous, load_history, read_saved_extras, read_saved_payloads, today_day)
+from .supplement import summarize
+from .technicals import compute as technicals
 from .http import HttpClient, persistent_json
 from .market import SOURCES, normalize, build_context
 from .report import factual_report
@@ -130,25 +133,45 @@ def check_target(trade_date, target_date, archive_root, output, state, analysis_
         raise Skip('already_saved')
 
 
-def enrich(context, quotes, extras, root, state, watchlist):
-    """Add flows, valuation and the computed insight sections to the context."""
+def enrich(context, quotes, extras, auxiliary, root, state, watchlist):
+    """Add flows, valuation, the auxiliary sources and every computed section to the context."""
     trade_date = context['trade_date']
-    extra_rows, extra_status = extras(trade_date)
+    saved = Path(root) / 'daily' / trade_date
+    rows, status = extras(trade_date)
+    payloads = {}
+    if auxiliary is not None:
+        aux_rows, payloads, aux_status = auxiliary(trade_date, watchlist)
+        quoted = {q['symbol'] for q in quotes}
+        for symbol, record in aux_rows.items():
+            if symbol in quoted:  # the depository also lists securities this digest does not cover
+                rows.setdefault(symbol, {}).update(record)
+        status.update(aux_status)
     # A retry must not lose a source that an earlier save of this day already had.
-    kept = keep_previous(extra_rows, extra_status, *read_saved_extras(Path(root) / 'daily' / trade_date),
-                         {q['symbol']: q['market'] for q in quotes})
+    kept = keep_previous(rows, status, *read_saved_extras(saved), {q['symbol']: q['market'] for q in quotes},
+                         fields={**SOURCE_FIELDS, **SYMBOL_FIELDS}, payloads=payloads,
+                         previous_payloads=read_saved_payloads(saved))
     if kept:
         state['extras_kept_from_saved'] = kept
-    state['extras'] = extra_status
-    state['extras_complete'] = extras_complete(extra_status)
+    state['extras'] = status
+    state['extras_complete'] = extras_complete(status)
+    state['core_complete'] = core_complete(status)
     history = load_history(root, trade_date)
-    context['insights'] = compute_insights(quotes, extra_rows, history, watchlist)
+    tdcc_date = (payloads.get('tdcc') or {}).get('date')
+    days = history + [today_day(quotes, rows, tdcc_date)]
+    insights = compute_days(days, rows, watchlist)
+    insights.update(summarize(payloads, days, watchlist))
+    insights['technicals'] = technicals(days, watchlist)
+    context['insights'] = insights
+    if payloads:
+        context['auxiliary'] = payloads
     context['limitations'][0] = (
-        f'動能指標使用本專案已保存的最近 {len(history)} 個交易日；沒有新聞、財報、月營收或融資融券。')
-    return extra_rows, extra_status
+        f'動能與技術指標使用本專案已保存的最近 {len(history)} 個交易日，價格未還原除權息；'
+        '重大訊息、注意與處置名單為收集當下的內容。')
+    return rows, status, tdcc_date
 
 
-def snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo, sources, source_note):
+def snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo, sources, source_note,
+                   tdcc_date=None):
     """Everything written for the day before any optional service runs."""
     trade_date, analysis_status = context['trade_date'], state['analysis']
     # Invalidate the published view before overwriting the data it described.
@@ -170,6 +193,8 @@ def snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo, 
                     row_count=len(quotes),
                     files_sha256={name: hashlib.sha256(data).hexdigest() for name, (data, _) in core.items()})
     manifest['extras'] = extra_status
+    if tdcc_date:
+        manifest['tdcc_date'] = tdcc_date
     if source_note:
         manifest['source_note'] = source_note
     if state.get('rejected_rows'):
@@ -212,7 +237,7 @@ def run_analysis(context, config, analyzer, day, drive, folder, archive_root, st
 def run(target_date, output, watchlist, *, demo=False, drive=None,
         analysis_config=None, fetch=None, analyzer=analyze, archive_root=None,
         configure_remote=None, analysis_requested=False, sources=None, source_note=None,
-        extras=None):
+        extras=None, auxiliary=None):
     """Collect one snapshot.
 
     ``sources`` and ``source_note`` describe a non-default origin (per-date
@@ -220,6 +245,8 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
     ``extras(trade_date) -> (by symbol, status)`` supplies institutional flows,
     valuation and industries; a source that fails leaves its section empty
     and marks the day incomplete so a later scheduled run collects it again.
+    ``auxiliary(trade_date, watchlist) -> (by symbol, payloads, status)`` adds
+    the supplementary sources in the same way.
 
     target_date=None accepts whatever trading day ``fetch`` reports, as long as
     it is newer than what is already saved. A string target_date is strict:
@@ -231,7 +258,7 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
     if demo:
         target_date = target_date or DEMO_DATE
         output = output / 'demo'
-        drive, analysis_config, fetch, extras = None, None, fetch_demo, demo_extras
+        drive, analysis_config, fetch, extras, auxiliary = None, None, fetch_demo, demo_extras, demo_auxiliary
         archive_root = None
         configure_remote, analysis_requested = None, False
     if fetch is None:
@@ -240,6 +267,7 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         # fails JSON parsing, which plain retries do not cover. Retry it too.
         fetch = lambda market: persistent_json(http, SOURCES[market], attempts=6, pause=10.0)
         extras = extras or fetch_extras
+        auxiliary = auxiliary or fetch_auxiliary
     # A caller-supplied fetch (tests, backfill) gets extras only if it asks for them.
     extras = extras or (lambda trade_date: ({}, {'extras': 'not_requested'}))
     root = archive_root if archive_root is not None else output
@@ -263,12 +291,12 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
         check_target(trade_date, target_date, archive_root, output, state,
                      bool(analysis_config or analysis_requested))
         state['stage'] = 'collect_extras'
-        extra_rows, extra_status = enrich(context, quotes, extras, root, state, watchlist)
+        extra_rows, extra_status, tdcc_date = enrich(context, quotes, extras, auxiliary, root, state, watchlist)
         state['stage'] = 'write_collection'
         day = output / 'daily' / trade_date
         state['analysis'] = analysis_status = 'pending' if analysis_config or analysis_requested else 'disabled'
         core, manifest = snapshot_files(context, quotes, raw, extra_rows, extra_status, state, demo,
-                                        sources, source_note)
+                                        sources, source_note, tdcc_date)
         for name, (content, _) in core.items():
             write(day / name, content)
         state['row_count'] = len(quotes)
@@ -309,7 +337,7 @@ def run(target_date, output, watchlist, *, demo=False, drive=None,
             report += ('\n---\n\n' + analysis_text).encode()
         state['stage'] = 'publish_latest'
         latest = json_bytes(dict(trade_date=trade_date, analysis=state['analysis'], demo=demo,
-                                 extras_complete=state['extras_complete']))
+                                 extras_complete=state['extras_complete'], core_complete=state['core_complete']))
         local_latest = output / 'latest.json'
         if can_update_latest(local_latest.read_bytes() if local_latest.exists() else None, trade_date):
             write(output / 'latest.md', report)

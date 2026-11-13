@@ -1,8 +1,15 @@
 import datetime as dt
+import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from tw_stock_digest.backfill import tpex_rows, twse_rows
+from test_market import tpex, twse
+from tw_stock_digest import backfill
+from tw_stock_digest.backfill import saved_fetcher, tpex_rows, twse_rows
 from tw_stock_digest.market import normalize
+from tw_stock_digest.pipeline import run
 
 DAY = dt.date(2026, 10, 28)
 TWSE_FIELDS = ['證券代號', '證券名稱', '成交股數', '成交筆數', '成交金額', '開盤價', '最高價', '最低價',
@@ -47,3 +54,63 @@ class BackfillConversionTests(unittest.TestCase):
             twse_rows({'stat': '很抱歉，沒有符合條件的資料!'}, DAY)
         with self.assertRaises(ValueError):
             tpex_rows({'stat': 'ok', 'tables': [{'fields': TPEX_FIELDS, 'data': []}]}, DAY)
+
+
+class ReuseSavedQuotesTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.archive, self.output = Path(self.tmp.name) / 'data', Path(self.tmp.name) / 'output'
+        self.rows = {'TWSE': [twse(), twse('1101', Name='=cmd', Change='X', ClosingPrice='--'),
+                              twse('0050', TradeVolume='12,345,678', TradeValue='1,234,567,890.5', Change='-0.35')],
+                     'TPEX': [tpex()]}
+        extras = lambda day: ({'2330': dict(industry='半導體業', pe=20.0, foreign=1000.0, trust=0.0, dealer=0.0)},
+                              {name: 'ok' for name in backfill.SOURCE_FIELDS})
+        run('2026-10-21', self.output, ['2330'], fetch=self.rows.__getitem__, archive_root=self.archive, extras=extras,
+            sources=backfill.URLS, source_note='From the per-date reports.')
+        self.folder = self.archive / 'daily/2026-10-21'
+
+    def test_saved_quotes_round_trip_through_the_normalizer(self):
+        fetch = saved_fetcher(self.folder)
+        for market, rows in self.rows.items():
+            self.assertEqual(normalize(market, fetch(market)), normalize(market, rows))
+
+    def test_rebuild_adds_supplementary_data_and_keeps_everything_else(self):
+        before = (self.folder / 'quotes.csv').read_bytes()
+
+        def auxiliary(trade_date, watchlist):
+            return ({'2330': dict(margin=500.0, margin_change=5.0)},
+                    {'twse_index': dict(taiex=dict(close=20000.0, change=100.0, change_pct=0.5), sectors=[])},
+                    {'twse_index': 'ok', 'twse_margin': 'ok'})
+
+        def no_network(trade_date):
+            raise AssertionError('saved flows and valuation are complete; nothing to download')
+        args = ['--date', '2026-10-21', '--repo-dir', str(self.archive), '--output', str(self.output),
+                '--watchlist', '2330', '--reuse-quotes']
+        with patch.object(backfill, 'fetch_auxiliary', auxiliary), patch.object(backfill, 'fetch_extras', no_network), \
+                patch('builtins.print'):
+            self.assertEqual(backfill.main(args), 0)
+            self.assertEqual(backfill.main(args), 0)  # repeatable
+        self.assertEqual((self.folder / 'quotes.csv').read_bytes(), before)
+        manifest = json.loads((self.folder / 'manifest.json').read_text())
+        self.assertEqual(manifest['sources'], backfill.URLS)
+        self.assertEqual(manifest['source_note'], 'From the per-date reports. ' + backfill.REBUILT)
+        self.assertEqual(manifest['extras']['twse_margin'], 'ok')
+        context = json.loads((self.folder / 'context.json').read_text())
+        self.assertEqual(context['insights']['index']['taiex']['close'], 20000.0)
+        self.assertEqual(context['insights']['valuation']['watchlist'][0]['pe'], 20.0)
+        self.assertIn('2330,半導體業,20.0', (self.folder / 'extras.csv').read_text(encoding='utf-8-sig'))
+
+    def test_rebuild_refuses_a_day_whose_rejected_rows_would_be_forgotten(self):
+        manifest = json.loads((self.folder / 'manifest.json').read_text())
+        manifest['rejected_rows'] = [['TWSE', '9999', 'invalid_number']]
+        (self.folder / 'manifest.json').write_text(json.dumps(manifest))
+        with patch('builtins.print') as printed:
+            code = backfill.main(['--date', '2026-10-21', '--repo-dir', str(self.archive), '--output', str(self.output),
+                                  '--reuse-quotes', '--no-aux'])
+        self.assertEqual(code, 1)
+        self.assertIn('rejected rows', str(printed.call_args))
+
+
+if __name__ == '__main__':
+    unittest.main()

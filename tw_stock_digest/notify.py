@@ -21,13 +21,14 @@ import sys
 from zoneinfo import ZoneInfo
 
 from .http import HttpClient, RemoteError
-from .report import headline
+from .report import headline, pending_groups
 
 API = 'https://api.github.com'
 TAIPEI = ZoneInfo('Asia/Taipei')
 DIGEST_LABEL, ALERT_LABEL = 'digest', 'digest-alert'
 LABELS = {DIGEST_LABEL: ('1f6feb', '每日盤後摘要'), ALERT_LABEL: ('d73a4a', '資料收集問題')}
 TITLE_PREFIX = '臺股盤後 '
+BODY_LIMIT = 60000
 FINISHED_ANALYSIS = ('generated', 'cached')
 
 
@@ -63,8 +64,12 @@ class Issues:
 
 
 def digest_ready(latest, now):
-    """Publish once flows and valuation are in, or at 07:00 the next day regardless."""
-    if latest.get('extras_complete', True):
+    """Publish once flows, valuation and the indices are in, or at 07:00 the next day regardless.
+
+    Sources that are published later in the evening (margin, lending) do not
+    hold the push back; they are added to the same issue when they arrive.
+    """
+    if latest.get('core_complete', latest.get('extras_complete', True)):
         return True
     cutoff = dt.datetime.combine(dt.date.fromisoformat(latest['trade_date']) + dt.timedelta(days=1),
                                  dt.time(7, 0), TAIPEI)
@@ -81,16 +86,21 @@ def digest_issue(archive, day, *, owner, file_base):
     lines = ['**今日重點**', ''] + ['- ' + point for point in head['points']]
     links = [f'[完整摘要]({file_base}/{day}/facts.md)', f'[行情 CSV]({file_base}/{day}/quotes.csv)']
     lines += ['', '｜'.join(links) + (f'｜cc @{owner}' if owner else '')]
-    if not all(v in ('ok', 'demo', 'not_requested', 'unavailable') for v in (manifest.get('extras') or {}).values()):
-        lines += ['', '> 部分法人或估值資料在收集時尚未公布，相關段落可能空白。']
+    pending = pending_groups(manifest.get('extras') or {})
+    if pending:
+        lines += ['', f"> 收集時尚未公布：{'、'.join(pending)}。之後的排程補到資料時會直接更新這則 issue。"]
     if manifest.get('analysis') in FINISHED_ANALYSIS:
         analysis = (folder / 'analysis.md').read_text(encoding='utf-8')
         lines += ['', '---', '', analysis.split('\n', 1)[1].strip() if analysis.startswith('# ') else analysis.strip()]
-    # The key points are already above; continue with the tables.
-    marker = '\n## 市場概況'
-    rest = facts[facts.index(marker):].strip() if marker in facts else facts.strip()
+    # The key points are already above; continue with the sections that follow them.
+    after = facts.split('\n## 今日重點', 1)[-1]
+    rest = after[after.index('\n## '):].strip() if '\n## ' in after else facts.strip()
     lines += ['', '---', '', rest]
-    return head['title'], '\n'.join(lines) + '\n'
+    body = '\n'.join(lines) + '\n'
+    if len(body) > BODY_LIMIT:  # GitHub rejects issue bodies above 65,536 characters
+        cut = body.rfind('\n## ', 0, BODY_LIMIT)
+        body = body[:cut if cut > 0 else BODY_LIMIT].rstrip() + '\n\n（內容過長，其餘段落請看上方「完整摘要」連結。）\n'
+    return head['title'], body
 
 
 def alert_issue(failed, run_url, owner=''):

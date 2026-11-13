@@ -6,7 +6,8 @@ import unittest
 
 from test_market import tpex, twse
 from tw_stock_digest import backfill
-from tw_stock_digest.daily import TAIPEI, collect_pending, exit_code, pending_days
+from tw_stock_digest.daily import (TAIPEI, collect_patiently, collect_pending, exit_code, pending_days,
+                                   seconds_until_evening, worth_waiting)
 from tw_stock_digest.http import RemoteError
 from tw_stock_digest.market import SOURCES, normalize
 
@@ -44,11 +45,66 @@ class PendingDaysTests(unittest.TestCase):
         self.assertEqual(pending_days(saved, latest, at('2026-10-22T21:00')), [THU])
         self.assertEqual(pending_days(saved, self.latest(THU), at('2026-10-22T21:00')), [])
 
+    def test_a_source_that_never_arrives_stops_being_waited_for(self):
+        saved = {d.isoformat() for d in EARLIER + [WED, THU]}
+        latest = self.latest(THU, extras_complete=False)
+        self.assertEqual(pending_days(saved, latest, at('2026-10-23T13:00')), [THU])
+        self.assertEqual(pending_days(saved, latest, at('2026-10-23T20:00')), [FRI])
+        # ... but a day whose collection itself is unfinished is still completed.
+        unfinished = self.latest(THU, snapshot_status='collected')
+        self.assertEqual(pending_days(saved, unfinished, at('2026-10-25T09:00')), [THU, FRI])
+
     def test_snapshot_day_outside_weekdays_is_included_unless_older_than_saved(self):
         saturday = dt.date(2026, 10, 24)
         saved = {d.isoformat() for d in (dt.date(2026, 10, 19), dt.date(2026, 10, 20), WED, THU, FRI)}
         days = pending_days(saved, self.latest(FRI), at('2026-10-25T09:00'), [saturday, THU])
         self.assertEqual(days, [saturday])
+
+
+class PatienceTests(unittest.TestCase):
+    def run_at(self, start, summaries, closed=None):
+        """Run with a clock that starts at ``start`` and only moves when the collector sleeps."""
+        clock, slept, results = [at(start)], [], list(summaries)
+
+        def sleep(seconds):
+            slept.append(seconds)
+            clock[0] += dt.timedelta(seconds=seconds)
+        summary = collect_patiently(lambda: results.pop(0), closed=closed, now=lambda: clock[0], sleep=sleep)
+        return summary, slept, results
+
+    def day(self, **fields):
+        return dict(days=[dict(trade_date='2026-10-22', **fields)])
+
+    def test_afternoon_run_waits_for_the_evening_reports(self):
+        self.assertEqual(seconds_until_evening(at('2026-10-22T14:45')), 3 * 3600)
+        for moment in ('2026-10-22T13:59', '2026-10-22T17:45', '2026-10-22T21:00', '2026-10-24T15:00'):  # last: Saturday
+            self.assertEqual(seconds_until_evening(at(moment)), 0)
+        done = self.day(status='complete', core_complete=True)
+        summary, slept, left = self.run_at('2026-10-22T14:45', [dict(days=[]), done])
+        self.assertEqual((summary, slept, left), (done, [3 * 3600], []))
+
+    def test_evening_run_keeps_looking_until_the_digest_is_worth_pushing(self):
+        waiting = [self.day(status='skipped', reason='not_published'), self.day(status='complete', core_complete=False),
+                   self.day(status='failed', reason='source_unreachable')]
+        done = self.day(status='complete', core_complete=True)
+        summary, slept, left = self.run_at('2026-10-22T17:50', waiting + [done])
+        self.assertEqual((summary, slept, left), (done, [600, 600, 600], []))
+        # It gives up at 19:30 and leaves the rest to the next run.
+        summary, slept, _ = self.run_at('2026-10-22T19:15', [waiting[0]] * 5)
+        self.assertEqual((summary, slept), (waiting[0], [600, 600]))
+        for other in (dict(days=[]), self.day(status='failed', stage='write_collection'),
+                      dict(days=[dict(trade_date='2026-10-21', status='skipped', reason='not_published')])):
+            self.assertFalse(worth_waiting(other, at('2026-10-22T18:00')))
+
+    def test_no_waiting_on_a_closed_day_or_outside_the_window(self):
+        empty = dict(days=[])
+        closed = lambda: {dt.date(2026, 10, 22)}
+        self.assertEqual(self.run_at('2026-10-22T14:45', [empty, empty], closed)[1:], ([], [empty]))
+        self.assertEqual(self.run_at('2026-10-22T09:00', [empty, empty])[1:], ([], [empty]))
+
+        def unreachable():
+            raise RemoteError('example.test')
+        self.assertEqual(self.run_at('2026-10-22T14:45', [empty, empty], unreachable)[1], [3 * 3600])
 
 
 class CollectPendingTests(unittest.TestCase):

@@ -22,3 +22,32 @@ def demo_extras(trade_date):
              '6488': dict(industry='半導體業', pe=15.0, pb=2.0, dividend_yield=3.5,
                           foreign=-80000, trust=10000, dealer=0)},
             {'extras': 'demo'})
+
+
+def demo_auxiliary(trade_date, watchlist):
+    """Synthetic supplementary data so the demo shows every section."""
+    payloads = {
+        'twse_index': dict(taiex=dict(close=20000.0, change=150.0, change_pct=0.76),
+                           sectors=[dict(name='半導體類', close=500.0, change_pct=1.5),
+                                    dict(name='金融保險類', close=2000.0, change_pct=-0.4),
+                                    dict(name='航運類', close=180.0, change_pct=0.2)]),
+        'twse_turnover': dict(turnover_twd=3.5e11, volume_shares=6e9, trades=2e6),
+        'tpex_index': dict(close=250.0, change=-1.0, change_pct=-0.4, turnover_twd=9e10),
+        'taifex_futures': dict(net_oi=dict(foreign=-30000, trust=12000, dealer=500),
+                               net_oi_change=dict(foreign=-1500, trust=300, dealer=-200),
+                               net_traded=dict(foreign=-1200, trust=250, dealer=-150)),
+        'taifex_pcr': dict(volume_ratio=95.0, oi_ratio=110.0, put_oi=120000.0, call_oi=109000.0, oi_ratio_change=2.5),
+        'twse_margin': dict(margin_twd=3.2e11, margin_change_twd=1.5e9, margin_lots=7000000.0,
+                            margin_lots_change=12000.0, short_lots=250000.0, short_lots_change=-3000.0),
+        'twse_notice': [], 'twse_punish': [],
+        'mops_material': dict(count=120, since=f'{trade_date} 08:00', items=[dict(symbol='2330', name='示範上市公司', date=trade_date, time='17:30',
+                                                     subject='示範：公告董事會決議')]),
+        'twse_revenue': dict(month=trade_date[:7], reported=900, median_yoy_pct=4.2, items=[
+            dict(symbol='2330', name='示範上市公司', month=trade_date[:7], revenue_100m_twd=2500.0, mom_pct=3.1,
+                 yoy_pct=25.4, ytd_yoy_pct=30.2)]),
+    }
+    symbols = {'2330': dict(margin=30000.0, margin_change=500.0, short=800.0, short_change=-20.0,
+                            sbl=12000.0, sbl_change=300.0, daytrade=300000.0),
+               '6488': dict(margin=4000.0, margin_change=-120.0, short=90.0, short_change=5.0,
+                            sbl=600.0, sbl_change=-10.0, daytrade=20000.0)}
+    return symbols, payloads, {name: 'demo' for name in payloads}
