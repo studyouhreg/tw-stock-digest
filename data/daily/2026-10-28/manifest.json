@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-10-28",
   "demo": false,
-  "captured_at_utc": "2026-11-03T06:54:43.866505+00:00",
+  "captured_at_utc": "2026-11-13T13:01:58.497698+00:00",
   "sources": {
     "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date={d:%Y%m%d}&type=ALLBUT0999&response=json",
     "TPEX": "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={d:%Y}%2F{d:%m}%2F{d:%d}&type=EW&response=json"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "b88fccdac988f926d25c5b4299a9897b388e6b7fa562ddf291e61fb1c3010db5",
     "analysis.md": "d2856d0c7dc48be7cf1f30244b5c68ba8009e8474013ec5d2ad7cf8538231d35",
-    "claude-prompt.md": "82c78917a9ba024c7d91e446dcd055f9e5fd6de49e4ea4860002142ab26f59c4",
-    "context.json": "77bca9707b3d47b3a97be21281249d9f8be45ae9b30db1bd3c47e0296542c22c",
-    "extras.csv": "7d6d1a0188c135061470158af11a70036dca1c706b238ee7d5838f073a626ea5",
-    "facts.md": "b03c0258b1a2e1c4de6c9e6454898c196038b55385e8e9a513e816c8397c6aed",
+    "claude-prompt.md": "4cafbb478e21a05ccc7e5abbdb246a1075f2425d1e02a227c0351a0dc79565ac",
+    "context.json": "00d9c8358b41e2fa24916efe70d61719834b5793973dc8a933ee72f7216f8598",
+    "extras.csv": "faf4f8d21b34cffc8a13d1b0eb99248dbe0c71e1097071018bed1cf4f8c4c161",
+    "facts.md": "05601172deb688f28407e1e34a2857c02924a26b373ddf294719b714ae16d424",
     "quotes.csv": "de4bf8d87ef9e86eb0cf9bda0b1c90970bda354176edaa39d0436b3d3910a9ae"
   },
   "extras": {
@@ -24,21 +24,43 @@
     "twse_valuation": "ok",
     "tpex_valuation": "ok",
     "twse_industry": "ok",
-    "tpex_industry": "ok"
+    "tpex_industry": "ok",
+    "twse_index": "failed:RemoteError",
+    "twse_turnover": "ok",
+    "tpex_index": "ok",
+    "taifex_futures": "ok",
+    "taifex_pcr": "ok",
+    "taifex_large": "ok",
+    "twse_margin": "ok",
+    "tpex_margin": "ok",
+    "twse_sbl": "ok",
+    "tpex_sbl": "ok",
+    "twse_daytrade": "ok",
+    "tpex_daytrade": "ok",
+    "twse_notice": "ok",
+    "twse_punish": "ok",
+    "tpex_notice": "ok",
+    "tpex_punish": "ok",
+    "mops_material": "ok",
+    "twse_revenue": "unavailable",
+    "tpex_revenue": "unavailable",
+    "twse_exright": "unavailable",
+    "tpex_exright": "unavailable",
+    "tdcc": "unavailable"
   },
-  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change.",
+  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change. Rebuilt from the saved quotes to add supplementary data.",
   "analysis": "disabled",
   "archive_format": "github-normalized-v1",
   "source_files_sha256": {
     "analysis.json": "b88fccdac988f926d25c5b4299a9897b388e6b7fa562ddf291e61fb1c3010db5",
     "analysis.md": "d2856d0c7dc48be7cf1f30244b5c68ba8009e8474013ec5d2ad7cf8538231d35",
-    "raw_TWSE.json": "f9905505d8c20001d407ba4721d2de743259f637083cac8bb71df8039520795b",
-    "raw_TPEX.json": "3523015f25d404d5538642b1005dcbbe37c1cc7d08324870968001efae8773b9",
+    "raw_TWSE.json": "2851c4295f6e75fa722dd37cade2d665ab33211eabf15b8329800e83a61e4ecf",
+    "raw_TPEX.json": "d5cda8bd3a107774c16482dd315db30ab1ca3b39a59277239a25401306815e8a",
     "quotes.csv": "de4bf8d87ef9e86eb0cf9bda0b1c90970bda354176edaa39d0436b3d3910a9ae",
-    "extras.csv": "7d6d1a0188c135061470158af11a70036dca1c706b238ee7d5838f073a626ea5",
-    "context.json": "77bca9707b3d47b3a97be21281249d9f8be45ae9b30db1bd3c47e0296542c22c",
-    "claude-prompt.md": "82c78917a9ba024c7d91e446dcd055f9e5fd6de49e4ea4860002142ab26f59c4",
-    "facts.md": "b03c0258b1a2e1c4de6c9e6454898c196038b55385e8e9a513e816c8397c6aed"
+    "extras.csv": "faf4f8d21b34cffc8a13d1b0eb99248dbe0c71e1097071018bed1cf4f8c4c161",
+    "context.json": "00d9c8358b41e2fa24916efe70d61719834b5793973dc8a933ee72f7216f8598",
+    "claude-prompt.md": "4cafbb478e21a05ccc7e5abbdb246a1075f2425d1e02a227c0351a0dc79565ac",
+    "facts.md": "05601172deb688f28407e1e34a2857c02924a26b373ddf294719b714ae16d424"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }

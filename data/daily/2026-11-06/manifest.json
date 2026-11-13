@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-11-06",
   "demo": false,
-  "captured_at_utc": "2026-11-07T06:08:09.319510+00:00",
+  "captured_at_utc": "2026-11-13T13:11:22.984597+00:00",
   "sources": {
     "TWSE": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL",
     "TPEX": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "9c4d0b619b819f166553fd80c5421528bfd5af647e63101c07917d9e0c846461",
     "analysis.md": "6ca7e65d3abf18f158ebf3a1117240d8dd039e463f225a19cbf944d30626f9ff",
-    "claude-prompt.md": "1cca220264377926ef7c5c2c892b6c3f474c0a168ea9d2b5666296125be555e2",
-    "context.json": "29022acedbfaa96b927fa3afcbeb62d1e5d69a559a72da8896d4e7cf644256d3",
-    "extras.csv": "8bdc5df4a94cb77e6e6ea26df0ff0257253e1aa3db5e89c14dd70e6b572159ba",
-    "facts.md": "96050bb45c5bb6bb61a173053a65d10c6e4328e966553cccdd8698e07ffbcc25",
+    "claude-prompt.md": "9e2d873b3263a6a4170f0ed8327dca6aa20bb3bfe4e4ed8dbe97d8f4253506b2",
+    "context.json": "3d6ac6122e298a65288da1d585fc502b60b9031eaf573f54ba94e63494f5d430",
+    "extras.csv": "bebef88d3ccb36e56175fa884e5195fc02bebb56595f93f9ba3be0b5abdecdf6",
+    "facts.md": "3bbfe585b428c9ae070ead4a2b81f629f87c656edc25715637d32b900aa80f3c",
     "quotes.csv": "ac6b85047bb1b94d22cb70e616d5a3836531c053f0f3ab53e871850eef2cb370"
   },
   "extras": {
@@ -24,20 +24,43 @@
     "twse_valuation": "ok",
     "tpex_valuation": "ok",
     "twse_industry": "ok",
-    "tpex_industry": "ok"
+    "tpex_industry": "ok",
+    "twse_index": "ok",
+    "twse_turnover": "ok",
+    "tpex_index": "ok",
+    "taifex_futures": "ok",
+    "taifex_pcr": "ok",
+    "taifex_large": "ok",
+    "twse_margin": "ok",
+    "tpex_margin": "ok",
+    "twse_sbl": "ok",
+    "tpex_sbl": "ok",
+    "twse_daytrade": "ok",
+    "tpex_daytrade": "ok",
+    "twse_notice": "ok",
+    "twse_punish": "ok",
+    "tpex_notice": "ok",
+    "tpex_punish": "ok",
+    "mops_material": "ok",
+    "twse_revenue": "unavailable",
+    "tpex_revenue": "unavailable",
+    "twse_exright": "unavailable",
+    "tpex_exright": "unavailable",
+    "tdcc": "unavailable"
   },
+  "source_note": "Rebuilt from the saved quotes to add supplementary data.",
   "analysis": "disabled",
   "archive_format": "github-normalized-v1",
   "source_files_sha256": {
     "analysis.json": "9c4d0b619b819f166553fd80c5421528bfd5af647e63101c07917d9e0c846461",
     "analysis.md": "6ca7e65d3abf18f158ebf3a1117240d8dd039e463f225a19cbf944d30626f9ff",
-    "raw_TWSE.json": "024415b5b7840fd131595de1466f1768f7d0d749c27b374fb0fac6db0b0aa961",
-    "raw_TPEX.json": "5978a49337e8a7bf1d01963f138367774fb7d23427a15c7f4169e536b065451f",
+    "raw_TWSE.json": "6b4b249728f180cab66291ef5f9fcd9459057346d4cb5a629c0efd9404edb201",
+    "raw_TPEX.json": "e3780fde3942f78681493efa20197a211ae93eb6d96adf948ae3ef73374a46b6",
     "quotes.csv": "ac6b85047bb1b94d22cb70e616d5a3836531c053f0f3ab53e871850eef2cb370",
-    "extras.csv": "8bdc5df4a94cb77e6e6ea26df0ff0257253e1aa3db5e89c14dd70e6b572159ba",
-    "context.json": "29022acedbfaa96b927fa3afcbeb62d1e5d69a559a72da8896d4e7cf644256d3",
-    "claude-prompt.md": "1cca220264377926ef7c5c2c892b6c3f474c0a168ea9d2b5666296125be555e2",
-    "facts.md": "96050bb45c5bb6bb61a173053a65d10c6e4328e966553cccdd8698e07ffbcc25"
+    "extras.csv": "bebef88d3ccb36e56175fa884e5195fc02bebb56595f93f9ba3be0b5abdecdf6",
+    "context.json": "3d6ac6122e298a65288da1d585fc502b60b9031eaf573f54ba94e63494f5d430",
+    "claude-prompt.md": "9e2d873b3263a6a4170f0ed8327dca6aa20bb3bfe4e4ed8dbe97d8f4253506b2",
+    "facts.md": "3bbfe585b428c9ae070ead4a2b81f629f87c656edc25715637d32b900aa80f3c"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }

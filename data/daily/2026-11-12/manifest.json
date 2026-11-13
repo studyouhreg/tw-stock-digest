@@ -3,7 +3,7 @@
   "status": "complete",
   "trade_date": "2026-11-12",
   "demo": false,
-  "captured_at_utc": "2026-11-12T17:45:56.796158+00:00",
+  "captured_at_utc": "2026-11-13T13:15:43.952806+00:00",
   "sources": {
     "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date=20261112&type=ALLBUT0999&response=json",
     "TPEX": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
@@ -12,10 +12,10 @@
   "files_sha256": {
     "analysis.json": "d1d57255fb85085e04577649f6fc0de8d2bed2737a6eed47bc4d4eb4f4ba3e1e",
     "analysis.md": "0fa17ce83ef2999ab774726716e52a96408c40acd1b9205ff160f1bb0261dabf",
-    "claude-prompt.md": "a301ef8b860909a3892e41c7ab45fcee2a9563b4c1b07da0c61c231e501ef0ae",
-    "context.json": "4e8756919beb064526a725a3cf17444f78cd47bdfe9d764fd192a25aa77a0986",
-    "extras.csv": "fe25af168f3f5c198252dd367a3956d0379c705bac815a122be3af6a3fca8b92",
-    "facts.md": "c373257d7a5ab696b092c8f68a647209987b7d577a60f57a61511a190fcf73de",
+    "claude-prompt.md": "a0a12f5fb94deb93b3b06b0b0ba60c57da2f8dc895c0a8722aab9889b4cd7bb9",
+    "context.json": "ea97d58fa7fe9b825a131bf84cf778548e62878b9bf3c13338fd11254d999835",
+    "extras.csv": "0bf5e5e8ace1e4f6550bedc829be18335ec65b5413c41fcdb9e1c8432536b594",
+    "facts.md": "ddd8ba4f0fa7836eccadcc7c237a11930c22854a5645dc5a20ad0d4a1e216931",
     "quotes.csv": "b8bf304f672c10b61620c8af98536292e1a83e7ffcb455277d6bc8f5a0f91578"
   },
   "extras": {
@@ -24,21 +24,44 @@
     "twse_valuation": "ok",
     "tpex_valuation": "ok",
     "twse_industry": "ok",
-    "tpex_industry": "ok"
+    "tpex_industry": "ok",
+    "twse_index": "ok",
+    "twse_turnover": "ok",
+    "tpex_index": "ok",
+    "taifex_futures": "ok",
+    "taifex_pcr": "ok",
+    "taifex_large": "ok",
+    "twse_margin": "ok",
+    "tpex_margin": "ok",
+    "twse_sbl": "ok",
+    "tpex_sbl": "ok",
+    "twse_daytrade": "ok",
+    "tpex_daytrade": "ok",
+    "twse_notice": "ok",
+    "twse_punish": "ok",
+    "tpex_notice": "ok",
+    "tpex_punish": "ok",
+    "mops_material": "ok",
+    "twse_revenue": "ok",
+    "tpex_revenue": "ok",
+    "twse_exright": "ok",
+    "tpex_exright": "ok",
+    "tdcc": "ok"
   },
-  "source_note": "TWSE quotes from the per-date report (MI_INDEX); ex-rights changes from the reference price table.",
+  "tdcc_date": "2026-11-06",
+  "source_note": "TWSE quotes from the per-date report (MI_INDEX); ex-rights changes from the reference price table. Rebuilt from the saved quotes to add supplementary data.",
   "analysis": "disabled",
   "archive_format": "github-normalized-v1",
   "source_files_sha256": {
     "analysis.json": "d1d57255fb85085e04577649f6fc0de8d2bed2737a6eed47bc4d4eb4f4ba3e1e",
     "analysis.md": "0fa17ce83ef2999ab774726716e52a96408c40acd1b9205ff160f1bb0261dabf",
-    "raw_TWSE.json": "64ebdccccbac9808f591a940aa99f732f3553705765af1db16e6d9483e31915f",
-    "raw_TPEX.json": "9382ed7bf325d6db5dafb2cca30c24bb4322626bac4b774bb4f6e60a35b039ae",
+    "raw_TWSE.json": "23fe385e98cc533713c7a1fba7837b728699db69702d65cda1ce609ca10440e8",
+    "raw_TPEX.json": "05e6c148456b65da684b57c709a15f9a67cde2399f4801c71b2467a935a07d93",
     "quotes.csv": "b8bf304f672c10b61620c8af98536292e1a83e7ffcb455277d6bc8f5a0f91578",
-    "extras.csv": "fe25af168f3f5c198252dd367a3956d0379c705bac815a122be3af6a3fca8b92",
-    "context.json": "4e8756919beb064526a725a3cf17444f78cd47bdfe9d764fd192a25aa77a0986",
-    "claude-prompt.md": "a301ef8b860909a3892e41c7ab45fcee2a9563b4c1b07da0c61c231e501ef0ae",
-    "facts.md": "c373257d7a5ab696b092c8f68a647209987b7d577a60f57a61511a190fcf73de"
+    "extras.csv": "0bf5e5e8ace1e4f6550bedc829be18335ec65b5413c41fcdb9e1c8432536b594",
+    "context.json": "ea97d58fa7fe9b825a131bf84cf778548e62878b9bf3c13338fd11254d999835",
+    "claude-prompt.md": "a0a12f5fb94deb93b3b06b0b0ba60c57da2f8dc895c0a8722aab9889b4cd7bb9",
+    "facts.md": "ddd8ba4f0fa7836eccadcc7c237a11930c22854a5645dc5a20ad0d4a1e216931"
   },
   "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
 }
