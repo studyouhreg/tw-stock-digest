@@ -3,6 +3,7 @@
   "analysis": "disabled",
   "snapshot_status": "complete",
   "demo": false,
-  "report_sha256": "75444b72464863b6f4fa1fced09e8a61be6cab051994d118ea733b99fcb2dd28",
-  "extras_complete": false
+  "report_sha256": "88abc54e6374f25542f8f6ac4da0fc1fc3965841db61edb36e4eba3b66c16a09",
+  "extras_complete": false,
+  "core_complete": true
 }
