@@ -293,7 +293,7 @@
   ],
   "missing_watchlist": [],
   "limitations": [
-    "動能與技術指標使用本專案已保存的最近 38 個交易日，價格未還原除權息；重大訊息、注意與處置名單為收集當下的內容。",
+    "動能與技術指標使用本專案已保存的最近 80 個交易日，價格未還原除權息；重大訊息、注意與處置名單為收集當下的內容。",
     "摘要涵蓋四碼股票類證券與 00 開頭 ETF；權證及其他代碼未納入。",
     "市場統計僅為上述涵蓋範圍，並非加權指數或官方市場總成交值。",
     "change_pct 由官方價差與推算參考價換算，並非含息報酬；除權息需另查。"
@@ -500,22 +500,22 @@
       ]
     },
     "institutions": {
-      "days_available": 39,
+      "days_available": 81,
       "window_days": 5,
       "today_100m_twd": {
         "TWSE": {
           "foreign": 289.17,
-          "trust": 81.43,
+          "trust": 94.34,
           "dealer": 66.93
         },
         "TPEX": {
           "foreign": 34.69,
-          "trust": -11.6,
+          "trust": -9.02,
           "dealer": 3.08
         },
         "ALL": {
           "foreign": 323.86,
-          "trust": 69.83,
+          "trust": 85.31,
           "dealer": 70.01
         }
       },
@@ -543,7 +543,7 @@
         {
           "date": "2026-11-13",
           "foreign": 323.86,
-          "trust": 69.83
+          "trust": 85.31
         }
       ],
       "market": {
@@ -553,8 +553,8 @@
           "streak_days": 2
         },
         "trust": {
-          "today_100m_twd": 69.83,
-          "window_100m_twd": 1128.28,
+          "today_100m_twd": 85.31,
+          "window_100m_twd": 1143.77,
           "streak_days": 24
         },
         "dealer": {
@@ -681,18 +681,18 @@
           "change_pct": 0.43
         },
         {
+          "symbol": "1303",
+          "name": "南亞",
+          "net_100m_twd": 126.63,
+          "streak_days": 14,
+          "change_pct": 3.75
+        },
+        {
           "symbol": "2454",
           "name": "聯發科",
           "net_100m_twd": 111.61,
           "streak_days": 23,
           "change_pct": 7.01
-        },
-        {
-          "symbol": "1303",
-          "name": "南亞",
-          "net_100m_twd": 110.07,
-          "streak_days": 14,
-          "change_pct": 3.75
         },
         {
           "symbol": "3443",
@@ -702,18 +702,18 @@
           "change_pct": 9.54
         },
         {
+          "symbol": "6223",
+          "name": "旺矽",
+          "net_100m_twd": 67.28,
+          "streak_days": 7,
+          "change_pct": 0.32
+        },
+        {
           "symbol": "3017",
           "name": "奇鋐",
           "net_100m_twd": 66.25,
           "streak_days": 22,
           "change_pct": 9.55
-        },
-        {
-          "symbol": "6223",
-          "name": "旺矽",
-          "net_100m_twd": 64.75,
-          "streak_days": 7,
-          "change_pct": 0.32
         },
         {
           "symbol": "3711",
@@ -934,7 +934,7 @@
       "industries": 33
     },
     "money_flow": {
-      "days_available": 38,
+      "days_available": 80,
       "volume_surge_up": [
         {
           "symbol": "2524",
@@ -1200,6 +1200,252 @@
         "top10_specific_net": 13170
       }
     },
+    "margin": {
+      "market": {
+        "TWSE": {
+          "margin_100m_twd": 5365.99,
+          "margin_change_100m_twd": 31.24,
+          "margin_lots_change": 4891.0,
+          "short_lots": 208773.0,
+          "short_lots_change": -1749.0,
+          "sbl_lots": 36812572,
+          "sbl_lots_change": -54708
+        },
+        "TPEX": {
+          "margin_100m_twd": 1720.2,
+          "margin_change_100m_twd": 19.27,
+          "margin_lots_change": 20074.0,
+          "short_lots": 37108.0,
+          "short_lots_change": 1160.0,
+          "sbl_lots": 2194511,
+          "sbl_lots_change": 2645
+        }
+      },
+      "increases": [
+        {
+          "symbol": "1802",
+          "name": "台玻",
+          "margin_change_lots": 14982,
+          "margin_change_100m_twd": 12.75,
+          "margin_lots": 47796,
+          "change_pct": 4.16
+        },
+        {
+          "symbol": "1815",
+          "name": "富喬",
+          "margin_change_lots": 8027,
+          "margin_change_100m_twd": 11.4,
+          "margin_lots": 57066,
+          "change_pct": 3.65
+        },
+        {
+          "symbol": "3715",
+          "name": "定穎投控",
+          "margin_change_lots": 4905,
+          "margin_change_100m_twd": 6.94,
+          "margin_lots": 26252,
+          "change_pct": -1.39
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "margin_change_lots": 160,
+          "margin_change_100m_twd": 6.59,
+          "margin_lots": 11713,
+          "change_pct": 7.01
+        },
+        {
+          "symbol": "3406",
+          "name": "玉晶光",
+          "margin_change_lots": 542,
+          "margin_change_100m_twd": 5.35,
+          "margin_lots": 3623,
+          "change_pct": 0.71
+        }
+      ],
+      "decreases": [
+        {
+          "symbol": "3653",
+          "name": "健策",
+          "margin_change_lots": -296,
+          "margin_change_100m_twd": -15.82,
+          "margin_lots": 3674,
+          "change_pct": -4.64
+        },
+        {
+          "symbol": "3661",
+          "name": "世芯-KY",
+          "margin_change_lots": -161,
+          "margin_change_100m_twd": -6.47,
+          "margin_lots": 4334,
+          "change_pct": 9.39
+        },
+        {
+          "symbol": "3017",
+          "name": "奇鋐",
+          "margin_change_lots": -211,
+          "margin_change_100m_twd": -6.41,
+          "margin_lots": 2988,
+          "change_pct": 9.55
+        },
+        {
+          "symbol": "6531",
+          "name": "愛普*",
+          "margin_change_lots": -638,
+          "margin_change_100m_twd": -4.57,
+          "margin_lots": 8914,
+          "change_pct": 5.76
+        },
+        {
+          "symbol": "3374",
+          "name": "精材",
+          "margin_change_lots": -639,
+          "margin_change_100m_twd": -3.32,
+          "margin_lots": 21147,
+          "change_pct": 9.96
+        }
+      ],
+      "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "margin_lots": 37150,
+          "margin_change_lots": -1050,
+          "margin_window_change_lots": -11050,
+          "window_days": 5,
+          "short_lots": 481,
+          "short_margin_ratio_pct": 1.29,
+          "sbl_lots": 247506,
+          "sbl_change_lots": -3622
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "margin_lots": 32376,
+          "margin_change_lots": 120,
+          "margin_window_change_lots": -2696,
+          "window_days": 5,
+          "short_lots": 50,
+          "short_margin_ratio_pct": 0.15,
+          "sbl_lots": 23826,
+          "sbl_change_lots": 90
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "margin_lots": 50690,
+          "margin_change_lots": -431,
+          "margin_window_change_lots": -1862,
+          "window_days": 5,
+          "short_lots": 506,
+          "short_margin_ratio_pct": 1.0,
+          "sbl_lots": 100156,
+          "sbl_change_lots": 1294
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "margin_lots": 11713,
+          "margin_change_lots": 160,
+          "margin_window_change_lots": 76,
+          "window_days": 5,
+          "short_lots": 61,
+          "short_margin_ratio_pct": 0.52,
+          "sbl_lots": 7616,
+          "sbl_change_lots": 320
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "margin_lots": 9021,
+          "margin_change_lots": 29,
+          "margin_window_change_lots": -1264,
+          "window_days": 5,
+          "short_lots": 198,
+          "short_margin_ratio_pct": 2.19,
+          "sbl_lots": 12089,
+          "sbl_change_lots": -287
+        }
+      ]
+    },
+    "daytrade": {
+      "market": {
+        "TWSE": {
+          "volume_share_pct": 31.3,
+          "buy_value_share_pct": 48.24,
+          "sell_value_share_pct": 48.3
+        },
+        "TPEX": {
+          "volume_share_pct": 25.75,
+          "buy_value_share_pct": 54.81,
+          "sell_value_share_pct": 54.89
+        }
+      },
+      "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "daytrade_pct": 32.5
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "daytrade_pct": 20.5
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "daytrade_pct": 29.8
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "daytrade_pct": 49.4
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "daytrade_pct": 63.8
+        }
+      ],
+      "highest": [
+        {
+          "symbol": "1802",
+          "name": "台玻",
+          "daytrade_pct": 83.7,
+          "turnover_100m_twd": 374.18,
+          "change_pct": 4.16
+        },
+        {
+          "symbol": "8042",
+          "name": "金山電",
+          "daytrade_pct": 83.1,
+          "turnover_100m_twd": 18.86,
+          "change_pct": -0.8
+        },
+        {
+          "symbol": "3441",
+          "name": "聯一光",
+          "daytrade_pct": 82.1,
+          "turnover_100m_twd": 64.13,
+          "change_pct": 0.76
+        },
+        {
+          "symbol": "5340",
+          "name": "建榮",
+          "daytrade_pct": 76.6,
+          "turnover_100m_twd": 14.91,
+          "change_pct": 2.15
+        },
+        {
+          "symbol": "6456",
+          "name": "GIS-KY",
+          "daytrade_pct": 76.4,
+          "turnover_100m_twd": 72.46,
+          "change_pct": 0.0
+        }
+      ]
+    },
     "flags": {
       "attention_count": 48,
       "attention": [
@@ -1320,7 +1566,7 @@
       "watchlist": []
     },
     "announcements": {
-      "count": 744,
+      "count": 767,
       "since": "2026-11-12 17:30",
       "items": [
         {
@@ -1581,14 +1827,14 @@
       ]
     },
     "technicals": {
-      "days_available": 39,
+      "days_available": 81,
       "breadth": {
         "counted": 783,
         "above_ma20_pct": 28.4,
-        "above_ma60_pct": null,
-        "window": 20,
-        "new_highs": 77,
-        "new_lows": 39
+        "above_ma60_pct": 28.2,
+        "window": 60,
+        "new_highs": 52,
+        "new_lows": 31
       },
       "new_highs": [
         {
@@ -1606,13 +1852,6 @@
           "turnover_100m_twd": 232.77
         },
         {
-          "symbol": "3661",
-          "name": "世芯-KY",
-          "close": 4020.0,
-          "change_pct": 9.39,
-          "turnover_100m_twd": 169.43
-        },
-        {
           "symbol": "3374",
           "name": "精材",
           "close": 519.0,
@@ -1627,25 +1866,11 @@
           "turnover_100m_twd": 67.49
         },
         {
-          "symbol": "6446",
-          "name": "藥華藥",
-          "close": 1380.0,
-          "change_pct": 1.1,
-          "turnover_100m_twd": 51.72
-        },
-        {
           "symbol": "2891",
           "name": "中信金",
           "close": 78.7,
           "change_pct": 4.38,
           "turnover_100m_twd": 50.46
-        },
-        {
-          "symbol": "6510",
-          "name": "精測",
-          "close": 3335.0,
-          "change_pct": 4.38,
-          "turnover_100m_twd": 41.32
         },
         {
           "symbol": "4916",
@@ -1660,6 +1885,27 @@
           "close": 74.2,
           "change_pct": 9.93,
           "turnover_100m_twd": 23.95
+        },
+        {
+          "symbol": "2471",
+          "name": "資通",
+          "close": 71.1,
+          "change_pct": 9.89,
+          "turnover_100m_twd": 15.57
+        },
+        {
+          "symbol": "1476",
+          "name": "儒鴻",
+          "close": 386.5,
+          "change_pct": 4.74,
+          "turnover_100m_twd": 15.37
+        },
+        {
+          "symbol": "6199",
+          "name": "天品",
+          "close": 169.0,
+          "change_pct": 0.6,
+          "turnover_100m_twd": 14.95
         }
       ],
       "watchlist": [
@@ -1669,13 +1915,13 @@
           "close": 102.5,
           "bias5_pct": 1.73,
           "bias20_pct": -1.15,
-          "bias60_pct": null,
+          "bias60_pct": -4.56,
           "rsi14": 43.3,
           "k9": 71.1,
           "d9": 52.8,
-          "macd_dif_pct": -2.5,
+          "macd_dif_pct": -2.49,
           "macd_hist_pct": -0.02,
-          "range60_pct": null
+          "range60_pct": 41.7
         },
         {
           "symbol": "2330",
@@ -1683,13 +1929,13 @@
           "close": 2350.0,
           "bias5_pct": 1.25,
           "bias20_pct": 0.07,
-          "bias60_pct": null,
+          "bias60_pct": -2.7,
           "rsi14": 47.3,
           "k9": 75.2,
           "d9": 57.4,
-          "macd_dif_pct": -1.55,
-          "macd_hist_pct": 0.19,
-          "range60_pct": null
+          "macd_dif_pct": -1.59,
+          "macd_hist_pct": 0.21,
+          "range60_pct": 47.8
         },
         {
           "symbol": "2317",
@@ -1697,13 +1943,13 @@
           "close": 241.0,
           "bias5_pct": 0.12,
           "bias20_pct": -0.65,
-          "bias60_pct": null,
+          "bias60_pct": -2.62,
           "rsi14": 46.9,
           "k9": 67.5,
           "d9": 59.4,
-          "macd_dif_pct": -0.9,
-          "macd_hist_pct": -0.05,
-          "range60_pct": null
+          "macd_dif_pct": -0.98,
+          "macd_hist_pct": -0.02,
+          "range60_pct": 52.4
         },
         {
           "symbol": "2454",
@@ -1711,13 +1957,13 @@
           "close": 4120.0,
           "bias5_pct": 5.56,
           "bias20_pct": 4.57,
-          "bias60_pct": null,
+          "bias60_pct": -4.34,
           "rsi14": 52.3,
           "k9": 72.1,
           "d9": 55.2,
-          "macd_dif_pct": -4.11,
-          "macd_hist_pct": 0.99,
-          "range60_pct": null
+          "macd_dif_pct": -3.85,
+          "macd_hist_pct": 0.87,
+          "range60_pct": 38.5
         },
         {
           "symbol": "6488",
@@ -1725,13 +1971,13 @@
           "close": 630.0,
           "bias5_pct": 2.87,
           "bias20_pct": -14.24,
-          "bias60_pct": null,
+          "bias60_pct": -30.75,
           "rsi14": 31.7,
           "k9": 38.6,
           "d9": 26.4,
-          "macd_dif_pct": -15.36,
-          "macd_hist_pct": -1.06,
-          "range60_pct": null
+          "macd_dif_pct": -15.74,
+          "macd_hist_pct": -0.89,
+          "range60_pct": 16.8
         }
       ]
     }
@@ -1946,6 +2192,40 @@
       "top10_net": 14605,
       "market_oi": 135553,
       "top10_specific_net": 13170
+    },
+    "twse_margin": {
+      "margin_twd": 536598938000.0,
+      "margin_change_twd": 3124309000.0,
+      "margin_lots": 9021098.0,
+      "margin_lots_change": 4891.0,
+      "short_lots": 208773.0,
+      "short_lots_change": -1749.0
+    },
+    "tpex_margin": {
+      "margin_twd": 172019692000.0,
+      "margin_change_twd": 1927201000.0,
+      "margin_lots": 2152744.0,
+      "margin_lots_change": 20074.0,
+      "short_lots": 37108.0,
+      "short_lots_change": 1160.0
+    },
+    "twse_sbl": {
+      "sbl_lots": 36812572,
+      "sbl_lots_change": -54708
+    },
+    "tpex_sbl": {
+      "sbl_lots": 2194511,
+      "sbl_lots_change": 2645
+    },
+    "twse_daytrade": {
+      "volume_share_pct": 31.3,
+      "buy_value_share_pct": 48.24,
+      "sell_value_share_pct": 48.3
+    },
+    "tpex_daytrade": {
+      "volume_share_pct": 25.75,
+      "buy_value_share_pct": 54.81,
+      "sell_value_share_pct": 54.89
     },
     "twse_notice": [
       {
@@ -2231,7 +2511,7 @@
       }
     ],
     "mops_material": {
-      "count": 744,
+      "count": 767,
       "since": "2026-11-12 17:30",
       "items": [
         {
