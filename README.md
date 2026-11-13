@@ -25,10 +25,10 @@ python -m tw_stock_digest --no-drive --repo-dir data
 
 本專案已設定 GitHub Actions，亦可手動執行。每個交易日的摘要**當天晚上**就會入庫並推播：
 
-- **排程**：臺灣時間 17:47、19:17、21:17、23:17，以及隔天 08:17、13:17（GitHub 的排程常晚數小時、有時整次被丟棄，所以排多個時段；沒事做的執行只花幾秒，也不產生提交）。
+- **排程**：臺灣時間 13:17 到 00:17 每小時一次，加上隔天 08:17。GitHub 的排程實際啟動時間常晚數小時、有時整次被丟棄，所以不依賴任何單一時段：每次執行都收集所有待辦的交易日（沒事做只花幾秒，也不產生提交）；**平日 14:00–17:45 之間啟動的排程會留在原地等到 17:45 再收集**，之後每 10 分鐘再看一次、最晚到 19:30，直到法人、估值與大盤指數到齊。這樣不論哪個時段真的跑了，摘要都在當天傍晚推出。等待期間執行機是閒置的（公開儲存庫的 Actions 免費）；不想等可設定 repository variable `WAIT_FOR_CLOSE=false`。
 - **當晚就有資料**：證交所的「最新快照」API 隔天凌晨才更新，但逐日報表下午就公布。程式對每個待收集的交易日，快照剛好是那天就用快照，否則改讀逐日報表。
 - **漏掉的日子自動補回**：每次執行會檢查最近 7 天內還沒存到的平日，從最舊的開始補；休市日（交易所回報無資料，或在證交所休市日曆上）自動略過。
-- **推播**：摘要入庫後自動開一則 GitHub issue，標題是當天重點、內文是完整摘要並 @ 儲存庫擁有者，GitHub 會寄 Email，也會推播到 GitHub 手機 App。同一天重新收集只會更新那則 issue；新的一天會關閉舊的。交易日到隔天中午仍未存到時，另開一則警示 issue，補齊後自動關閉。不想用可設定 repository variable `NOTIFY_ISSUES=false`。
+- **推播**：法人、估值與大盤指數到齊後自動開一則 GitHub issue（較晚公布的融資融券、借券、當沖不擋推播，補到後直接更新同一則並在內文註明哪些尚未公布），標題是當天重點、內文是完整摘要並 @ 儲存庫擁有者，GitHub 會寄 Email，也會推播到 GitHub 手機 App。同一天重新收集只會更新那則 issue；新的一天會關閉舊的。交易日到隔天中午仍未存到時，另開一則警示 issue，補齊後自動關閉。不想用可設定 repository variable `NOTIFY_ISSUES=false`。
 - **單一檔異常不影響整天**：個別證券數值無法解析或開高低收不一致時排除該檔並記錄在 manifest 與摘要；超過 0.5%（至少 3 檔）才視為來源異常而失敗。
 
 ## 資料如何走
@@ -43,7 +43,7 @@ python -m tw_stock_digest --no-drive --repo-dir data
 
 ## 估值與資金流向
 
-每日摘要（`facts.md`、`latest.md`）除了漲跌家數與自選股，還有四段由程式計算的指標，也一併送給 Claude 分析：
+每日摘要（`facts.md`、`latest.md`）開頭是「今日重點」，接著除了漲跌家數與自選股，還有四段由程式計算的指標，也一併送給 Claude 分析：
 
 | 段落 | 內容 | 資料 |
 |---|---|---|
@@ -52,7 +52,28 @@ python -m tw_stock_digest --no-drive --repo-dir data
 | 產業資金輪動 | 各產業成交金額占比 vs 前 20 日平均，占比上升／下降前五名，含 5 日報酬中位數與外資累計 | 上市櫃公司基本資料的產業別 |
 | 個股量價資金流 | 量增價漲（成交金額 ≥ 20 日均 2 倍且收紅）、MFI(14) ≥ 80 或 ≤ 20、自選股 MFI 與 OBV | 已保存的逐日行情 |
 
-金額為買賣超股數 × 當日收盤價（億元，近似值；與證交所官方三大法人買賣金額統計比對，差距約 0–4%）。5 日、20 日等窗口用本專案 `data/daily` 已保存的交易日計算；任一來源當次尚未公布或失敗時，該段標示缺資料、`latest.json` 記 `extras_complete: false`，下一次排程會重新收集同一天。
+金額為買賣超股數 × 當日收盤價（億元，近似值；與證交所官方三大法人買賣金額統計比對，差距約 0–4%）。5 日、20 日等窗口用本專案 `data/daily` 已保存的交易日計算。
+
+## 輔助資料
+
+同一份摘要另有下列段落，全部來自官方來源、免金鑰。每個來源各自收集，一個失敗或尚未公布不影響其他來源：
+
+| 段落 | 內容 | 資料 | 大約公布時間 |
+|---|---|---|---|
+| 大盤與類股 | 加權指數、櫃買指數、成交金額；上市類股指數最強／最弱三類 | 證交所 `MI_INDEX`（IND）、`FMTQIK`；櫃買 `tradingIndex` | 收盤後 |
+| 期貨與選擇權籌碼 | 臺股期貨三大法人未平倉淨額與增減、Put/Call 比、大額交易人淨部位 | 期交所網站 CSV（`futContractsDate`、`pcRatio`、`largeTraderFut`） | 15:00 後 |
+| 融資融券與借券 | 上市、上櫃融資餘額與增減、融券、借券賣出餘額；融資增減前五名；自選股券資比 | 證交所 `MI_MARGN`、`TWT93U`；櫃買 `margin/balance`、`margin/sbl` | 約 21:00 |
+| 技術面 | 站上 20／60 日均線比例、創新高新低檔數與名單；自選股均線乖離、RSI(14)、KD(9)、MACD 柱 | 已保存的逐日行情（未還原除權息） | — |
+| 當沖 | 當沖占市場比重、當沖比最高個股、自選股當沖比 | 證交所 `TWTB4U`、櫃買 `intraday/stat` | 約 21:00 |
+| 大戶持股（集保） | 400 張、1,000 張以上持股比例與股東人數，及週變化 | 集保結算所開放資料（每週） | 週六 |
+| 注意與處置股 | 當日公布注意股、處置中的股票；自選股在名單內時列在今日重點 | 證交所、櫃買的注意／處置公告查詢 | 約 18:00 |
+| 自選股重大訊息 | 前一交易日收盤後到收集當下，自選股的重大訊息主旨（週一含週末） | 公開資訊觀測站 | 即時 |
+| 月營收 | 交易所最新月份的家數與年增率中位數；自選股營收、月增、年增 | 證交所、櫃買開放資料 | 每月 10 日前後 |
+| 除權息預告 | 未來 7 天除權息的檔數與最近一批；自選股除權息日 | 證交所 `TWT48U_ALL`、櫃買開放資料 | — |
+
+每個來源在 `manifest.json` 的 `extras` 都有狀態：`ok`、`not_published`（下次排程再試）、`unavailable`（只描述「現在」的清單，補舊日期時無法取得）或 `failed:…`。`latest.json` 的 `core_complete` 表示法人、估值、產業與大盤指數已到齊（可以推播），`extras_complete` 表示全部到齊；還沒到齊的最新交易日會在之後的排程重新收集，已存到的來源不會因為重試失敗而遺失，最晚重試到隔天 20:00。整批輔助資料最多花 7 分鐘，同一個網站連續兩次連不上就先跳過它剩下的來源。
+
+集保資料只提供最新一週，所以「週變化」要等本專案存到兩個不同週之後才有；月營收、除權息預告、集保是「現在」的清單，補超過 3 天前的日期時不會抓。
 
 ## 產出
 
@@ -60,8 +81,8 @@ python -m tw_stock_digest --no-drive --repo-dir data
 |---|---|
 | `raw_TWSE.json`、`raw_TPEX.json` | 保留來源欄位與原始數值，供追查 |
 | `quotes.csv` | 統一上市／上櫃欄位；成交量是股、成交金額是新臺幣 |
-| `context.json` | 各市場股票類漲跌家數、成交金額前五名、指定自選股，以及下方四段估值與資金流向指標 |
-| `extras.csv` | 每檔的產業、本益比、股價淨值比、殖利率與三大法人買賣超股數（2026-11 起） |
+| `context.json` | 各市場股票類漲跌家數、成交金額前五名、指定自選股、`insights`（所有計算出的段落）與 `auxiliary`（輔助來源的市場層級原始整理值） |
+| `extras.csv` | 每檔的產業、本益比、股價淨值比、殖利率、三大法人買賣超股數，以及融資／融券／借券餘額（張）與增減、當沖股數、400 與 1,000 張以上持股比例、股東人數 |
 | `facts.md` | 無需 AI 的繁體中文事實摘要 |
 | `claude-prompt.md` | 可以手動交給 Claude 的完整分析提示與資料 |
 | `analysis.md`、`analysis.json` | 本次分析或明確的 pending／disabled 狀態；完成後含模型與用量 |
@@ -138,21 +159,22 @@ class MyIdea(Strategy):
 ## 成本與限制
 
 - Claude Pro 網頁訂閱與 API 計費分開。此程式不使用網頁登入 cookie 或訂閱額度冒充 API。
-- 每個新輸入最多一次 Claude 呼叫，輸出上限 1,800 tokens；最多 50 檔自選股，輸入上限 60,000 字元。
+- 每個新輸入最多一次 Claude 呼叫，輸出上限 2,200 tokens；最多 50 檔自選股，輸入上限 60,000 字元（只送計算後的段落，不送 `auxiliary`；超過時依序省略大戶持股、當沖等次要段落並在輸入中註明）。
 - 同一資料、模型與提示詞的成功分析可由 GitHub、Drive 或本機快取重用。若付費呼叫完成但結果尚未保存／提交就中斷，重跑仍可能再次計費；不宣稱 exactly-once。
 - 每次更新資料先將當前分析檔標記為 pending／disabled；快取獨立保存。分析關閉或失敗不會留下冒充本次結果的舊分析。
 - 月費可用 `交易日數 × (input_tokens × 輸入單價 + output_tokens × 輸出單價) / 1,000,000` 估算。實際用量保存在 `analysis.json`；模型價格以 Anthropic 官方當期頁面為準。
 - Actions 和 Drive 仍受各帳號用量／儲存配額限制。GitHub 保留逐日整理資料；原始 JSON 的 artifact 只保留 14 日，長期保存原始資料可設定 Drive。
 - GitHub 寫入需要每日 workflow 的 contents: write，且分支規則允許 bot 提交；若有人同時更新 main 導致非快轉，push 會失敗並保留 artifact，請重新執行，不會強制覆蓋。
 - 公開 GitHub 儲存庫長時間無活動，排程可能因 60 日規則被停用；執行延遲、資料站封鎖或中斷也可能發生。可從 Actions 手動重跑。
-- 每日摘要沒有新聞、月營收或融資融券，不能據此做新聞歸因。動能指標只用本專案已保存的交易日，天數不足時會註明。快照價差不是含息總報酬。
+- 每日摘要沒有新聞；公司消息只有自選股的重大訊息主旨，不能據此做完整的新聞歸因。動能與技術指標只用本專案已保存的交易日（未還原除權息），天數不足時會註明。快照價差不是含息總報酬。
 - 分析只涵蓋四碼股票類證券與 `00` 開頭 ETF，權證及其他代碼不進摘要；不冒充全市場指數／總成交額。
-- 逐日報表與快照的差異會記在 manifest 的 `source_note`：上櫃改讀逐日報表時成交量不含零股（約少 1–2%）；上市除權息日的漲跌由官方除權息參考價換算。`--date YYYY-MM-DD` 只收集（或重收）指定的交易日；超過 7 天的舊日期可用 `python -m tw_stock_digest.backfill --date …` 補回。
+- 逐日報表與快照的差異會記在 manifest 的 `source_note`：上櫃改讀逐日報表時成交量不含零股（約少 1–2%）；上市除權息日的漲跌由官方除權息參考價換算。`--date YYYY-MM-DD` 只收集（或重收）指定的交易日；超過 7 天的舊日期可用 `python -m tw_stock_digest.backfill --date …` 補回（`--no-aux` 不抓輔助資料；`--reuse-quotes` 不重新下載行情，只用已保存的 `quotes.csv` 補上輔助資料並重算指標）。
 - Workflow concurrency 防止本儲存庫的工作同時更新 Drive；多個儲存庫或本機程序不要同時寫同一 Drive 資料夾。
 
 ## 官方參考
 
 - [TWSE OpenAPI](https://openapi.twse.com.tw/)、[TPEx OpenAPI](https://www.tpex.org.tw/openapi/)
+- [期交所三大法人、Put/Call 比、大額交易人](https://www.taifex.com.tw/cht/3/futContractsDate)、[集保戶股權分散表開放資料](https://opendata.tdcc.com.tw/)、[公開資訊觀測站](https://mops.twse.com.tw/)
 - [Google Drive OAuth scopes](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)
 - [Google OAuth refresh token 到期條件](https://developers.google.com/identity/protocols/oauth2)
 - [Google Drive service account 儲存限制](https://developers.google.com/workspace/drive/api/guides/handle-errors#storagequotaexceeded)
