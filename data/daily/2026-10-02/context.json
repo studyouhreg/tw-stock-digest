@@ -293,11 +293,12 @@
   ],
   "missing_watchlist": [],
   "limitations": [
-    "動能指標使用本專案已保存的最近 11 個交易日；沒有新聞、財報、月營收或融資融券。",
+    "動能與技術指標使用本專案已保存的最近 57 個交易日，價格未還原除權息；重大訊息、注意與處置名單為收集當下的內容。",
     "摘要涵蓋四碼股票類證券與 00 開頭 ETF；權證及其他代碼未納入。",
     "市場統計僅為上述涵蓋範圍，並非加權指數或官方市場總成交值。",
     "change_pct 由官方價差與推算參考價換算，並非含息報酬；除權息需另查。"
   ],
+  "source_note": "Backfilled from the per-date reports (TWSE MI_INDEX, TPEx afterTrading/otc). TPEx volume and turnover exclude odd lots; TWSE ex-rights days have no change. Rebuilt from the saved quotes to add supplementary data.",
   "insights": {
     "valuation": {
       "markets": {
@@ -306,14 +307,14 @@
           "median_pb": 1.99,
           "median_dividend_yield": 1.62,
           "with_pe": 672,
-          "without_pe": 215
+          "without_pe": 216
         },
         "TWSE": {
           "median_pe": 17.41,
           "median_pb": 1.7,
           "median_dividend_yield": 2.38,
           "with_pe": 870,
-          "without_pe": 212
+          "without_pe": 216
         }
       },
       "industries": {
@@ -499,7 +500,7 @@
       ]
     },
     "institutions": {
-      "days_available": 12,
+      "days_available": 58,
       "window_days": 5,
       "today_100m_twd": {
         "TWSE": {
@@ -545,6 +546,23 @@
           "trust": 41.79
         }
       ],
+      "market": {
+        "foreign": {
+          "today_100m_twd": 87.41,
+          "window_100m_twd": -400.84,
+          "streak_days": 3
+        },
+        "trust": {
+          "today_100m_twd": 41.79,
+          "window_100m_twd": -31.03,
+          "streak_days": 3
+        },
+        "dealer": {
+          "today_100m_twd": 26.84,
+          "window_100m_twd": -138.81,
+          "streak_days": 3
+        }
+      },
       "foreign_buy": [
         {
           "symbol": "3105",
@@ -817,15 +835,15 @@
       ]
     },
     "rotation": {
-      "days_available": 11,
+      "days_available": 20,
       "window_days": 5,
       "gaining": [
         {
           "industry": "電子零組件業",
           "members": 210,
           "turnover_share_pct": 33.0,
-          "share_average_pct": 23.39,
-          "share_change_pp": 9.61,
+          "share_average_pct": 23.11,
+          "share_change_pp": 9.89,
           "median_return_5d_pct": 3.19,
           "foreign_window_100m_twd": 117.38
         },
@@ -833,37 +851,37 @@
           "industry": "化學工業",
           "members": 42,
           "turnover_share_pct": 1.22,
-          "share_average_pct": 0.74,
-          "share_change_pp": 0.48,
+          "share_average_pct": 0.6,
+          "share_change_pp": 0.62,
           "median_return_5d_pct": 3.35,
           "foreign_window_100m_twd": 2.33
-        },
-        {
-          "industry": "通信網路業",
-          "members": 92,
-          "turnover_share_pct": 4.57,
-          "share_average_pct": 4.22,
-          "share_change_pp": 0.36,
-          "median_return_5d_pct": 1.96,
-          "foreign_window_100m_twd": 14.05
-        },
-        {
-          "industry": "電機機械",
-          "members": 98,
-          "turnover_share_pct": 2.24,
-          "share_average_pct": 1.91,
-          "share_change_pp": 0.33,
-          "median_return_5d_pct": 0.3,
-          "foreign_window_100m_twd": 4.97
         },
         {
           "industry": "光電業",
           "members": 115,
           "turnover_share_pct": 8.11,
-          "share_average_pct": 8.01,
-          "share_change_pp": 0.1,
+          "share_average_pct": 7.49,
+          "share_change_pp": 0.62,
           "median_return_5d_pct": 2.96,
           "foreign_window_100m_twd": -4.2
+        },
+        {
+          "industry": "電機機械",
+          "members": 98,
+          "turnover_share_pct": 2.24,
+          "share_average_pct": 2.1,
+          "share_change_pp": 0.14,
+          "median_return_5d_pct": 0.3,
+          "foreign_window_100m_twd": 4.97
+        },
+        {
+          "industry": "其他電子業",
+          "members": 94,
+          "turnover_share_pct": 4.56,
+          "share_average_pct": 4.45,
+          "share_change_pp": 0.11,
+          "median_return_5d_pct": 1.15,
+          "foreign_window_100m_twd": -63.57
         }
       ],
       "losing": [
@@ -871,8 +889,8 @@
           "industry": "半導體業",
           "members": 207,
           "turnover_share_pct": 34.47,
-          "share_average_pct": 41.65,
-          "share_change_pp": -7.17,
+          "share_average_pct": 40.8,
+          "share_change_pp": -6.32,
           "median_return_5d_pct": 3.41,
           "foreign_window_100m_twd": -282.22
         },
@@ -880,8 +898,8 @@
           "industry": "電腦及週邊設備業",
           "members": 109,
           "turnover_share_pct": 4.58,
-          "share_average_pct": 5.66,
-          "share_change_pp": -1.08,
+          "share_average_pct": 6.72,
+          "share_change_pp": -2.14,
           "median_return_5d_pct": 0.9,
           "foreign_window_100m_twd": -123.36
         },
@@ -889,8 +907,8 @@
           "industry": "金融保險業",
           "members": 40,
           "turnover_share_pct": 1.51,
-          "share_average_pct": 2.29,
-          "share_change_pp": -0.78,
+          "share_average_pct": 2.4,
+          "share_change_pp": -0.89,
           "median_return_5d_pct": -1.98,
           "foreign_window_100m_twd": -113.57
         },
@@ -898,8 +916,8 @@
           "industry": "塑膠工業",
           "members": 25,
           "turnover_share_pct": 1.59,
-          "share_average_pct": 2.06,
-          "share_change_pp": -0.47,
+          "share_average_pct": 2.17,
+          "share_change_pp": -0.58,
           "median_return_5d_pct": 0.78,
           "foreign_window_100m_twd": 152.54
         },
@@ -907,8 +925,8 @@
           "industry": "航運業",
           "members": 33,
           "turnover_share_pct": 0.46,
-          "share_average_pct": 0.8,
-          "share_change_pp": -0.34,
+          "share_average_pct": 0.94,
+          "share_change_pp": -0.48,
           "median_return_5d_pct": -0.41,
           "foreign_window_100m_twd": -11.99
         }
@@ -916,113 +934,1426 @@
       "industries": 33
     },
     "money_flow": {
-      "days_available": 11,
+      "days_available": 57,
       "volume_surge_up": [
         {
           "symbol": "6266",
           "name": "泰詠",
-          "turnover_ratio": 34.94,
+          "turnover_ratio": 31.88,
           "turnover_100m_twd": 0.77,
           "change_pct": 7.82
         },
         {
-          "symbol": "5228",
-          "name": "鈺鎧",
-          "turnover_ratio": 13.45,
-          "turnover_100m_twd": 0.96,
-          "change_pct": 9.95
-        },
-        {
-          "symbol": "3564",
-          "name": "其陽",
-          "turnover_ratio": 10.39,
-          "turnover_100m_twd": 1.09,
-          "change_pct": 10.0
-        },
-        {
-          "symbol": "9933",
-          "name": "中鼎",
-          "turnover_ratio": 9.62,
-          "turnover_100m_twd": 9.67,
-          "change_pct": 9.96
+          "symbol": "8182",
+          "name": "加高",
+          "turnover_ratio": 10.53,
+          "turnover_100m_twd": 3.35,
+          "change_pct": 4.86
         },
         {
           "symbol": "6127",
           "name": "九豪",
-          "turnover_ratio": 9.12,
+          "turnover_ratio": 10.06,
           "turnover_100m_twd": 17.08,
           "change_pct": 2.82
         },
         {
-          "symbol": "6263",
-          "name": "普萊德",
-          "turnover_ratio": 9.0,
-          "turnover_100m_twd": 1.01,
-          "change_pct": 3.35
-        },
-        {
-          "symbol": "5328",
-          "name": "華容",
-          "turnover_ratio": 8.85,
-          "turnover_100m_twd": 16.12,
-          "change_pct": 1.2
+          "symbol": "5228",
+          "name": "鈺鎧",
+          "turnover_ratio": 10.0,
+          "turnover_100m_twd": 0.96,
+          "change_pct": 9.95
         },
         {
           "symbol": "4772",
           "name": "台特化",
-          "turnover_ratio": 8.36,
+          "turnover_ratio": 9.92,
           "turnover_100m_twd": 16.27,
           "change_pct": 6.43
         },
         {
-          "symbol": "4716",
-          "name": "大立",
-          "turnover_ratio": 8.33,
-          "turnover_100m_twd": 0.7,
-          "change_pct": 9.86
+          "symbol": "9933",
+          "name": "中鼎",
+          "turnover_ratio": 9.82,
+          "turnover_100m_twd": 9.67,
+          "change_pct": 9.96
         },
         {
-          "symbol": "6953",
-          "name": "家碩",
-          "turnover_ratio": 8.12,
-          "turnover_100m_twd": 0.66,
-          "change_pct": 1.39
+          "symbol": "6155",
+          "name": "鈞寶",
+          "turnover_ratio": 9.68,
+          "turnover_100m_twd": 12.14,
+          "change_pct": 4.17
+        },
+        {
+          "symbol": "4720",
+          "name": "德淵",
+          "turnover_ratio": 8.51,
+          "turnover_100m_twd": 0.74,
+          "change_pct": 9.97
+        },
+        {
+          "symbol": "3114",
+          "name": "好德",
+          "turnover_ratio": 8.23,
+          "turnover_100m_twd": 1.39,
+          "change_pct": 9.99
+        },
+        {
+          "symbol": "5328",
+          "name": "華容",
+          "turnover_ratio": 8.2,
+          "turnover_100m_twd": 16.12,
+          "change_pct": 1.2
         }
       ],
-      "mfi_high": [],
-      "mfi_low": [],
+      "mfi_high": [
+        {
+          "symbol": "2030",
+          "name": "彰源",
+          "mfi": 98.2
+        },
+        {
+          "symbol": "3518",
+          "name": "柏騰",
+          "mfi": 97.8
+        },
+        {
+          "symbol": "5309",
+          "name": "系統電",
+          "mfi": 97.6
+        },
+        {
+          "symbol": "6122",
+          "name": "擎邦",
+          "mfi": 97.1
+        },
+        {
+          "symbol": "6199",
+          "name": "天品",
+          "mfi": 96.5
+        },
+        {
+          "symbol": "3441",
+          "name": "聯一光",
+          "mfi": 96.4
+        },
+        {
+          "symbol": "2340",
+          "name": "台亞",
+          "mfi": 96.2
+        },
+        {
+          "symbol": "2484",
+          "name": "希華",
+          "mfi": 94.3
+        },
+        {
+          "symbol": "2342",
+          "name": "茂矽",
+          "mfi": 94.0
+        },
+        {
+          "symbol": "3675",
+          "name": "德微",
+          "mfi": 93.8
+        }
+      ],
+      "mfi_low": [
+        {
+          "symbol": "6669",
+          "name": "緯穎",
+          "mfi": 10.3
+        },
+        {
+          "symbol": "2912",
+          "name": "統一超",
+          "mfi": 11.9
+        },
+        {
+          "symbol": "9941",
+          "name": "裕融",
+          "mfi": 14.9
+        },
+        {
+          "symbol": "1215",
+          "name": "卜蜂",
+          "mfi": 15.3
+        },
+        {
+          "symbol": "5871",
+          "name": "中租-KY",
+          "mfi": 16.5
+        }
+      ],
       "watchlist": [
         {
           "symbol": "0050",
           "name": "元大台灣50",
-          "mfi14": null,
+          "mfi14": 60.4,
           "obv10_days": 3.46
         },
         {
           "symbol": "2330",
           "name": "台積電",
-          "mfi14": null,
+          "mfi14": 75.3,
           "obv10_days": 4.33
         },
         {
           "symbol": "2317",
           "name": "鴻海",
-          "mfi14": null,
+          "mfi14": 43.8,
           "obv10_days": 2.43
         },
         {
           "symbol": "2454",
           "name": "聯發科",
-          "mfi14": null,
+          "mfi14": 49.2,
           "obv10_days": 4.2
         },
         {
           "symbol": "6488",
           "name": "環球晶",
-          "mfi14": null,
+          "mfi14": 75.0,
           "obv10_days": 1.79
         }
       ]
+    },
+    "index": {
+      "taiex": {
+        "close": 48475.74,
+        "change": 122.25,
+        "change_pct": 0.25,
+        "turnover_100m_twd": 9382.22
+      },
+      "sectors_up": [
+        {
+          "name": "油電燃氣類",
+          "close": 131.39,
+          "change_pct": 5.51
+        },
+        {
+          "name": "化學類",
+          "close": 201.68,
+          "change_pct": 2.83
+        },
+        {
+          "name": "塑膠類",
+          "close": 421.99,
+          "change_pct": 2.75
+        }
+      ],
+      "sectors_down": [
+        {
+          "name": "食品類",
+          "close": 1855.18,
+          "change_pct": -1.14
+        },
+        {
+          "name": "電腦及週邊設備類",
+          "close": 462.64,
+          "change_pct": -0.98
+        },
+        {
+          "name": "貿易百貨類",
+          "close": 232.04,
+          "change_pct": -0.96
+        }
+      ],
+      "sector_count": 32,
+      "tpex": {
+        "close": 426.93,
+        "change": 8.11,
+        "change_pct": 1.94,
+        "turnover_100m_twd": 2729.92
+      }
+    },
+    "futures": {
+      "institutions": {
+        "net_oi": {
+          "dealer": -1006,
+          "trust": 74669,
+          "foreign": -80304
+        },
+        "net_oi_change": {
+          "dealer": 434,
+          "trust": 54,
+          "foreign": -750
+        },
+        "net_traded": {
+          "dealer": 428,
+          "trust": 54,
+          "foreign": -802
+        }
+      },
+      "put_call": {
+        "volume_ratio": 89.16,
+        "oi_ratio": 80.84,
+        "put_oi": 41414.0,
+        "call_oi": 51228.0,
+        "oi_ratio_change": -1.7
+      },
+      "large_traders": {
+        "top5_net": 16257,
+        "top10_net": 2205,
+        "market_oi": 118531,
+        "top10_specific_net": 1292
+      }
+    },
+    "margin": {
+      "market": {
+        "TWSE": {
+          "margin_100m_twd": 6351.04,
+          "margin_change_100m_twd": 52.37,
+          "margin_lots_change": 45196.0,
+          "short_lots": 231986.0,
+          "short_lots_change": -1336.0,
+          "sbl_lots": 31746452,
+          "sbl_lots_change": 45673
+        },
+        "TPEX": {
+          "margin_100m_twd": 2215.39,
+          "margin_change_100m_twd": 26.67,
+          "margin_lots_change": 12584.0,
+          "short_lots": 37776.0,
+          "short_lots_change": 1314.0,
+          "sbl_lots": 2087838,
+          "sbl_lots_change": 4168
+        }
+      },
+      "increases": [
+        {
+          "symbol": "6274",
+          "name": "台燿",
+          "margin_change_lots": 1395,
+          "margin_change_100m_twd": 22.6,
+          "margin_lots": 16570,
+          "change_pct": 5.54
+        },
+        {
+          "symbol": "2303",
+          "name": "聯電",
+          "margin_change_lots": 9011,
+          "margin_change_100m_twd": 14.55,
+          "margin_lots": 189831,
+          "change_pct": 0.0
+        },
+        {
+          "symbol": "3037",
+          "name": "欣興",
+          "margin_change_lots": 699,
+          "margin_change_100m_twd": 9.12,
+          "margin_lots": 33484,
+          "change_pct": 7.41
+        },
+        {
+          "symbol": "3450",
+          "name": "聯鈞",
+          "margin_change_lots": 1628,
+          "margin_change_100m_twd": 8.84,
+          "margin_lots": 15319,
+          "change_pct": 5.44
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "margin_change_lots": 281,
+          "margin_change_100m_twd": 7.03,
+          "margin_lots": 30939,
+          "change_pct": -0.4
+        }
+      ],
+      "decreases": [
+        {
+          "symbol": "3189",
+          "name": "景碩",
+          "margin_change_lots": -1566,
+          "margin_change_100m_twd": -16.44,
+          "margin_lots": 18707,
+          "change_pct": 3.96
+        },
+        {
+          "symbol": "8046",
+          "name": "南電",
+          "margin_change_lots": -398,
+          "margin_change_100m_twd": -5.81,
+          "margin_lots": 9827,
+          "change_pct": 2.82
+        },
+        {
+          "symbol": "8996",
+          "name": "高力",
+          "margin_change_lots": -368,
+          "margin_change_100m_twd": -5.56,
+          "margin_lots": 9438,
+          "change_pct": -3.51
+        },
+        {
+          "symbol": "3605",
+          "name": "宏致",
+          "margin_change_lots": -2622,
+          "margin_change_100m_twd": -4.47,
+          "margin_lots": 15131,
+          "change_pct": -4.21
+        },
+        {
+          "symbol": "2492",
+          "name": "華新科",
+          "margin_change_lots": -1196,
+          "margin_change_100m_twd": -4.32,
+          "margin_lots": 19812,
+          "change_pct": 9.88
+        }
+      ],
+      "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "margin_lots": 48902,
+          "margin_change_lots": 804,
+          "margin_window_change_lots": -15685,
+          "window_days": 5,
+          "short_lots": 630,
+          "short_margin_ratio_pct": 1.29,
+          "sbl_lots": 228735,
+          "sbl_change_lots": 253
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "margin_lots": 30939,
+          "margin_change_lots": 281,
+          "margin_window_change_lots": 2106,
+          "window_days": 5,
+          "short_lots": 18,
+          "short_margin_ratio_pct": 0.06,
+          "sbl_lots": 14203,
+          "sbl_change_lots": 4
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "margin_lots": 58713,
+          "margin_change_lots": 824,
+          "margin_window_change_lots": 2271,
+          "window_days": 5,
+          "short_lots": 410,
+          "short_margin_ratio_pct": 0.7,
+          "sbl_lots": 43171,
+          "sbl_change_lots": 2284
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "margin_lots": 10864,
+          "margin_change_lots": 12,
+          "margin_window_change_lots": 564,
+          "window_days": 5,
+          "short_lots": 48,
+          "short_margin_ratio_pct": 0.44,
+          "sbl_lots": 4693,
+          "sbl_change_lots": 21
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "margin_lots": 16966,
+          "margin_change_lots": 382,
+          "margin_window_change_lots": 1415,
+          "window_days": 5,
+          "short_lots": 714,
+          "short_margin_ratio_pct": 4.21,
+          "sbl_lots": 40328,
+          "sbl_change_lots": 118
+        }
+      ]
+    },
+    "daytrade": {
+      "market": {
+        "TWSE": {
+          "volume_share_pct": 20.14,
+          "buy_value_share_pct": 39.92,
+          "sell_value_share_pct": 40.09
+        },
+        "TPEX": {
+          "volume_share_pct": 22.15,
+          "buy_value_share_pct": 44.71,
+          "sell_value_share_pct": 44.92
+        }
+      },
+      "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "daytrade_pct": 9.4
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "daytrade_pct": 8.7
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "daytrade_pct": 8.5
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "daytrade_pct": 30.8
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "daytrade_pct": 50.1
+        }
+      ],
+      "highest": [
+        {
+          "symbol": "3441",
+          "name": "聯一光",
+          "daytrade_pct": 77.9,
+          "turnover_100m_twd": 59.95,
+          "change_pct": 4.2
+        },
+        {
+          "symbol": "3094",
+          "name": "聯傑",
+          "daytrade_pct": 74.9,
+          "turnover_100m_twd": 24.7,
+          "change_pct": 3.84
+        },
+        {
+          "symbol": "2484",
+          "name": "希華",
+          "daytrade_pct": 73.8,
+          "turnover_100m_twd": 40.0,
+          "change_pct": 2.25
+        },
+        {
+          "symbol": "6213",
+          "name": "聯茂",
+          "daytrade_pct": 73.7,
+          "turnover_100m_twd": 163.71,
+          "change_pct": 6.39
+        },
+        {
+          "symbol": "3532",
+          "name": "台勝科",
+          "daytrade_pct": 70.7,
+          "turnover_100m_twd": 43.19,
+          "change_pct": 0.32
+        }
+      ]
+    },
+    "flags": {
+      "attention_count": 35,
+      "attention": [
+        {
+          "symbol": "1709",
+          "name": "和益",
+          "reason": "最近六十個營業日起迄兩個營業日之收盤價漲幅達148.43% 。最近九十個營業日起迄兩個營業日之收盤價漲幅達209.09% ﹝第二款﹞。"
+        },
+        {
+          "symbol": "2030",
+          "name": "彰源",
+          "reason": "最近六個營業日累積收盤價漲幅達35.71%﹝第一款﹞。"
+        },
+        {
+          "symbol": "2033",
+          "name": "佳大",
+          "reason": "最近六個營業日累積收盤價漲幅達33.16%﹝第一款﹞。最近三十個營業日起迄兩個營業日之收盤價漲幅達125.05% 。最近六十個營業日起迄兩個營業日之收盤價漲幅達222.01% 。最近九十個營業日起迄兩"
+        },
+        {
+          "symbol": "2340",
+          "name": "台亞",
+          "reason": "最近六個營業日累積收盤價漲幅達30.45%。且10月02日之成交量為最近六十個營業日日平均成交量之7.44倍﹝第三款﹞。且10月02日之週轉率為11.03%﹝第四款﹞。"
+        },
+        {
+          "symbol": "2466",
+          "name": "冠西電",
+          "reason": "最近九十個營業日起迄兩個營業日之收盤價漲幅達189.82% ﹝第二款﹞。"
+        },
+        {
+          "symbol": "2484",
+          "name": "希華",
+          "reason": "10月01日之最近六個營業日之當日沖銷成交量占最近六個營業日總成交量比率63.25%，且10月01日當日沖銷成交量占該日總成交量比率60.08%﹝第十三款﹞。"
+        },
+        {
+          "symbol": "3016",
+          "name": "嘉晶",
+          "reason": "最近六個營業日累積收盤價漲幅達32.41%﹝第一款﹞。"
+        },
+        {
+          "symbol": "3094",
+          "name": "聯傑",
+          "reason": "最近六個營業日累積收盤價漲幅達30.09%。且10月02日之週轉率為42.37%﹝第四款﹞。"
+        },
+        {
+          "symbol": "3167",
+          "name": "大量",
+          "reason": "10月02日之本益比為68.79，且股價淨值比為20.45 。另當日週轉率為 7.46%，且其股價淨值比較該類股股價淨值比四倍以上﹝第六款﹞。"
+        },
+        {
+          "symbol": "3518",
+          "name": "柏騰",
+          "reason": "最近六個營業日累積收盤價漲幅達33.37%﹝第一款﹞。且10月02日之成交量為最近六十個營業日日平均成交量之6.80倍﹝第三款﹞。且10月02日之週轉率為10.85%﹝第四款﹞。"
+        },
+        {
+          "symbol": "3701",
+          "name": "大眾控",
+          "reason": "最近六個營業日累積收盤價漲幅達30.03%。且10月02日之成交量為最近六十個營業日日平均成交量之7.54倍﹝第三款﹞。"
+        },
+        {
+          "symbol": "6155",
+          "name": "鈞寶",
+          "reason": "最近六個營業日累積收盤價漲幅達26.79%。且10月02日之成交量為最近六十個營業日日平均成交量之6.48倍﹝第三款﹞。且10月02日之週轉率為18.90%﹝第四款﹞。"
+        },
+        {
+          "symbol": "6225",
+          "name": "天瀚",
+          "reason": "最近六個營業日累積收盤價漲幅達30.93%。且10月02日之成交量為最近六十個營業日日平均成交量之5.03倍﹝第三款﹞。最近六十個營業日起迄兩個營業日之收盤價漲幅達452.00% 。最近九十個營業日起"
+        },
+        {
+          "symbol": "6426",
+          "name": "統新",
+          "reason": "最近六個營業日之累積週轉率為54.56%。且10月02日之週轉率為12.81%﹝第十款﹞。"
+        },
+        {
+          "symbol": "6533",
+          "name": "晶心科",
+          "reason": "最近六個營業日累積收盤價漲幅達34.37%。且六個營業日起迄兩個營業日收盤價價差達101.00元﹝第一款﹞。且10月02日之週轉率為14.95%﹝第四款﹞。"
+        }
+      ],
+      "disposal_count": 18,
+      "disposal": [
+        {
+          "symbol": "2468",
+          "name": "華經",
+          "start": "2026-09-22",
+          "end": "2026-10-02",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "6168",
+          "name": "宏齊",
+          "start": "2026-09-24",
+          "end": "2026-10-02",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "7772",
+          "name": "耀穎",
+          "start": "2026-09-24",
+          "end": "2026-10-02",
+          "measure": "再次處置"
+        },
+        {
+          "symbol": "2455",
+          "name": "全新",
+          "start": "2026-09-23",
+          "end": "2026-10-05",
+          "measure": "第二次處置"
+        },
+        {
+          "symbol": "3374",
+          "name": "精材",
+          "start": "2026-09-29",
+          "end": "2026-10-05",
+          "measure": "再次處置"
+        },
+        {
+          "symbol": "3443",
+          "name": "創意",
+          "start": "2026-09-29",
+          "end": "2026-10-05",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "4542",
+          "name": "科嶠",
+          "start": "2026-09-29",
+          "end": "2026-10-05",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "4979",
+          "name": "華星光",
+          "start": "2026-09-29",
+          "end": "2026-10-05",
+          "measure": "再次處置"
+        },
+        {
+          "symbol": "6218",
+          "name": "豪勉",
+          "start": "2026-09-23",
+          "end": "2026-10-05",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "6526",
+          "name": "達發",
+          "start": "2026-09-30",
+          "end": "2026-10-06",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "7792",
+          "name": "安葆",
+          "start": "2026-09-30",
+          "end": "2026-10-06",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "3219",
+          "name": "倚強科",
+          "start": "2026-10-01",
+          "end": "2026-10-07",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "2030",
+          "name": "彰源",
+          "start": "2026-10-02",
+          "end": "2026-10-08",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "8084",
+          "name": "巨虹",
+          "start": "2026-10-02",
+          "end": "2026-10-08",
+          "measure": "第一次處置"
+        },
+        {
+          "symbol": "8227",
+          "name": "巨有科技",
+          "start": "2026-10-02",
+          "end": "2026-10-08",
+          "measure": "再次處置"
+        }
+      ],
+      "watchlist": []
+    },
+    "announcements": {
+      "count": 187,
+      "since": "2026-10-01 17:36",
+      "items": []
+    },
+    "technicals": {
+      "days_available": 58,
+      "breadth": {
+        "counted": 822,
+        "above_ma20_pct": 76.8,
+        "above_ma60_pct": null,
+        "window": 20,
+        "new_highs": 234,
+        "new_lows": 41
+      },
+      "new_highs": [
+        {
+          "symbol": "2327",
+          "name": "國巨*",
+          "close": 626.0,
+          "change_pct": 3.99,
+          "turnover_100m_twd": 668.55
+        },
+        {
+          "symbol": "4958",
+          "name": "臻鼎-KY",
+          "close": 561.0,
+          "change_pct": 10.0,
+          "turnover_100m_twd": 378.5
+        },
+        {
+          "symbol": "2409",
+          "name": "友達",
+          "close": 40.45,
+          "change_pct": 5.61,
+          "turnover_100m_twd": 280.28
+        },
+        {
+          "symbol": "8046",
+          "name": "南電",
+          "close": 1460.0,
+          "change_pct": 2.82,
+          "turnover_100m_twd": 239.8
+        },
+        {
+          "symbol": "3037",
+          "name": "欣興",
+          "close": 1305.0,
+          "change_pct": 7.41,
+          "turnover_100m_twd": 235.09
+        },
+        {
+          "symbol": "3189",
+          "name": "景碩",
+          "close": 1050.0,
+          "change_pct": 3.96,
+          "turnover_100m_twd": 195.55
+        },
+        {
+          "symbol": "2492",
+          "name": "華新科",
+          "close": 361.5,
+          "change_pct": 9.88,
+          "turnover_100m_twd": 195.45
+        },
+        {
+          "symbol": "6182",
+          "name": "合晶",
+          "close": 135.0,
+          "change_pct": 3.85,
+          "turnover_100m_twd": 190.62
+        },
+        {
+          "symbol": "6274",
+          "name": "台燿",
+          "close": 1620.0,
+          "change_pct": 5.54,
+          "turnover_100m_twd": 190.54
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "close": 1190.0,
+          "change_pct": 9.68,
+          "turnover_100m_twd": 177.6
+        }
+      ],
+      "watchlist": [
+        {
+          "symbol": "0050",
+          "name": "元大台灣50",
+          "close": 112.8,
+          "bias5_pct": 0.45,
+          "bias20_pct": 2.77,
+          "bias60_pct": null,
+          "rsi14": 65.3,
+          "k9": 79.3,
+          "d9": 75.9,
+          "macd_dif_pct": 1.59,
+          "macd_hist_pct": 0.21,
+          "range60_pct": null
+        },
+        {
+          "symbol": "2330",
+          "name": "台積電",
+          "close": 2500.0,
+          "bias5_pct": 0.48,
+          "bias20_pct": 2.11,
+          "bias60_pct": null,
+          "rsi14": 58.1,
+          "k9": 82.2,
+          "d9": 75.7,
+          "macd_dif_pct": 0.98,
+          "macd_hist_pct": 0.23,
+          "range60_pct": null
+        },
+        {
+          "symbol": "2317",
+          "name": "鴻海",
+          "close": 251.0,
+          "bias5_pct": -0.2,
+          "bias20_pct": -0.05,
+          "bias60_pct": null,
+          "rsi14": 50.0,
+          "k9": 53.3,
+          "d9": 56.7,
+          "macd_dif_pct": 0.18,
+          "macd_hist_pct": 0.05,
+          "range60_pct": null
+        },
+        {
+          "symbol": "2454",
+          "name": "聯發科",
+          "close": 4950.0,
+          "bias5_pct": -1.18,
+          "bias20_pct": 3.88,
+          "bias60_pct": null,
+          "rsi14": 56.8,
+          "k9": 51.1,
+          "d9": 57.1,
+          "macd_dif_pct": 4.82,
+          "macd_hist_pct": -0.09,
+          "range60_pct": null
+        },
+        {
+          "symbol": "6488",
+          "name": "環球晶",
+          "close": 1190.0,
+          "bias5_pct": 14.36,
+          "bias20_pct": 23.51,
+          "bias60_pct": null,
+          "rsi14": 81.4,
+          "k9": 80.8,
+          "d9": 67.7,
+          "macd_dif_pct": 1.81,
+          "macd_hist_pct": 2.38,
+          "range60_pct": null
+        }
+      ]
+    }
+  },
+  "auxiliary": {
+    "twse_index": {
+      "taiex": {
+        "close": 48475.74,
+        "change": 122.25,
+        "change_pct": 0.25
+      },
+      "sectors": [
+        {
+          "name": "水泥類",
+          "close": 124.88,
+          "change_pct": -0.54
+        },
+        {
+          "name": "食品類",
+          "close": 1855.18,
+          "change_pct": -1.14
+        },
+        {
+          "name": "塑膠類",
+          "close": 421.99,
+          "change_pct": 2.75
+        },
+        {
+          "name": "紡織纖維類",
+          "close": 463.53,
+          "change_pct": 0.65
+        },
+        {
+          "name": "電機機械類",
+          "close": 546.66,
+          "change_pct": -0.09
+        },
+        {
+          "name": "電器電纜類",
+          "close": 110.19,
+          "change_pct": 0.23
+        },
+        {
+          "name": "化學類",
+          "close": 201.68,
+          "change_pct": 2.83
+        },
+        {
+          "name": "生技醫療類",
+          "close": 90.92,
+          "change_pct": -0.93
+        },
+        {
+          "name": "玻璃陶瓷類",
+          "close": 141.69,
+          "change_pct": 1.2
+        },
+        {
+          "name": "造紙類",
+          "close": 269.63,
+          "change_pct": -0.22
+        },
+        {
+          "name": "鋼鐵類",
+          "close": 122.52,
+          "change_pct": 0.4
+        },
+        {
+          "name": "橡膠類",
+          "close": 190.65,
+          "change_pct": -0.24
+        },
+        {
+          "name": "汽車類",
+          "close": 291.44,
+          "change_pct": -0.42
+        },
+        {
+          "name": "半導體類",
+          "close": 1639.74,
+          "change_pct": -0.18
+        },
+        {
+          "name": "電腦及週邊設備類",
+          "close": 462.64,
+          "change_pct": -0.98
+        },
+        {
+          "name": "光電類",
+          "close": 78.91,
+          "change_pct": 1.96
+        },
+        {
+          "name": "通信網路類",
+          "close": 238.94,
+          "change_pct": 1.8
+        },
+        {
+          "name": "電子零組件類",
+          "close": 996.75,
+          "change_pct": 2.21
+        },
+        {
+          "name": "電子通路類",
+          "close": 383.07,
+          "change_pct": 0.96
+        },
+        {
+          "name": "資訊服務類",
+          "close": 237.32,
+          "change_pct": -0.17
+        },
+        {
+          "name": "其他電子類",
+          "close": 284.93,
+          "change_pct": 0.26
+        },
+        {
+          "name": "建材營造類",
+          "close": 440.01,
+          "change_pct": -0.59
+        },
+        {
+          "name": "航運類",
+          "close": 211.06,
+          "change_pct": 0.81
+        },
+        {
+          "name": "觀光餐旅類",
+          "close": 101.47,
+          "change_pct": -0.28
+        },
+        {
+          "name": "金融保險類",
+          "close": 3510.91,
+          "change_pct": -0.11
+        },
+        {
+          "name": "貿易百貨類",
+          "close": 232.04,
+          "change_pct": -0.96
+        },
+        {
+          "name": "油電燃氣類",
+          "close": 131.39,
+          "change_pct": 5.51
+        },
+        {
+          "name": "綠能環保類",
+          "close": 132.4,
+          "change_pct": -0.85
+        },
+        {
+          "name": "數位雲端類",
+          "close": 39.33,
+          "change_pct": -0.2
+        },
+        {
+          "name": "運動休閒類",
+          "close": 55.46,
+          "change_pct": -0.89
+        },
+        {
+          "name": "居家生活類",
+          "close": 97.72,
+          "change_pct": -0.31
+        },
+        {
+          "name": "其他類",
+          "close": 274.14,
+          "change_pct": -0.19
+        }
+      ]
+    },
+    "twse_turnover": {
+      "turnover_twd": 938222196327.0,
+      "volume_shares": 11017717304.0,
+      "trades": 4612433.0
+    },
+    "tpex_index": {
+      "close": 426.93,
+      "change": 8.11,
+      "change_pct": 1.94,
+      "turnover_twd": 272991656000.0
+    },
+    "taifex_futures": {
+      "net_oi": {
+        "dealer": -1006,
+        "trust": 74669,
+        "foreign": -80304
+      },
+      "net_oi_change": {
+        "dealer": 434,
+        "trust": 54,
+        "foreign": -750
+      },
+      "net_traded": {
+        "dealer": 428,
+        "trust": 54,
+        "foreign": -802
+      }
+    },
+    "taifex_pcr": {
+      "volume_ratio": 89.16,
+      "oi_ratio": 80.84,
+      "put_oi": 41414.0,
+      "call_oi": 51228.0,
+      "oi_ratio_change": -1.7
+    },
+    "taifex_large": {
+      "top5_net": 16257,
+      "top10_net": 2205,
+      "market_oi": 118531,
+      "top10_specific_net": 1292
+    },
+    "twse_margin": {
+      "margin_twd": 635104422000.0,
+      "margin_change_twd": 5237229000.0,
+      "margin_lots": 9398006.0,
+      "margin_lots_change": 45196.0,
+      "short_lots": 231986.0,
+      "short_lots_change": -1336.0
+    },
+    "tpex_margin": {
+      "margin_twd": 221538772000.0,
+      "margin_change_twd": 2666796000.0,
+      "margin_lots": 2407555.0,
+      "margin_lots_change": 12584.0,
+      "short_lots": 37776.0,
+      "short_lots_change": 1314.0
+    },
+    "twse_sbl": {
+      "sbl_lots": 31746452,
+      "sbl_lots_change": 45673
+    },
+    "tpex_sbl": {
+      "sbl_lots": 2087838,
+      "sbl_lots_change": 4168
+    },
+    "twse_daytrade": {
+      "volume_share_pct": 20.14,
+      "buy_value_share_pct": 39.92,
+      "sell_value_share_pct": 40.09
+    },
+    "tpex_daytrade": {
+      "volume_share_pct": 22.15,
+      "buy_value_share_pct": 44.71,
+      "sell_value_share_pct": 44.92
+    },
+    "twse_notice": [
+      {
+        "symbol": "1709",
+        "name": "和益",
+        "reason": "最近六十個營業日起迄兩個營業日之收盤價漲幅達148.43% 。最近九十個營業日起迄兩個營業日之收盤價漲幅達209.09% ﹝第二款﹞。"
+      },
+      {
+        "symbol": "2030",
+        "name": "彰源",
+        "reason": "最近六個營業日累積收盤價漲幅達35.71%﹝第一款﹞。"
+      },
+      {
+        "symbol": "2033",
+        "name": "佳大",
+        "reason": "最近六個營業日累積收盤價漲幅達33.16%﹝第一款﹞。最近三十個營業日起迄兩個營業日之收盤價漲幅達125.05% 。最近六十個營業日起迄兩個營業日之收盤價漲幅達222.01% 。最近九十個營業日起迄兩"
+      },
+      {
+        "symbol": "2340",
+        "name": "台亞",
+        "reason": "最近六個營業日累積收盤價漲幅達30.45%。且10月02日之成交量為最近六十個營業日日平均成交量之7.44倍﹝第三款﹞。且10月02日之週轉率為11.03%﹝第四款﹞。"
+      },
+      {
+        "symbol": "2466",
+        "name": "冠西電",
+        "reason": "最近九十個營業日起迄兩個營業日之收盤價漲幅達189.82% ﹝第二款﹞。"
+      },
+      {
+        "symbol": "2484",
+        "name": "希華",
+        "reason": "10月01日之最近六個營業日之當日沖銷成交量占最近六個營業日總成交量比率63.25%，且10月01日當日沖銷成交量占該日總成交量比率60.08%﹝第十三款﹞。"
+      },
+      {
+        "symbol": "3016",
+        "name": "嘉晶",
+        "reason": "最近六個營業日累積收盤價漲幅達32.41%﹝第一款﹞。"
+      },
+      {
+        "symbol": "3094",
+        "name": "聯傑",
+        "reason": "最近六個營業日累積收盤價漲幅達30.09%。且10月02日之週轉率為42.37%﹝第四款﹞。"
+      },
+      {
+        "symbol": "3167",
+        "name": "大量",
+        "reason": "10月02日之本益比為68.79，且股價淨值比為20.45 。另當日週轉率為 7.46%，且其股價淨值比較該類股股價淨值比四倍以上﹝第六款﹞。"
+      },
+      {
+        "symbol": "3518",
+        "name": "柏騰",
+        "reason": "最近六個營業日累積收盤價漲幅達33.37%﹝第一款﹞。且10月02日之成交量為最近六十個營業日日平均成交量之6.80倍﹝第三款﹞。且10月02日之週轉率為10.85%﹝第四款﹞。"
+      },
+      {
+        "symbol": "3701",
+        "name": "大眾控",
+        "reason": "最近六個營業日累積收盤價漲幅達30.03%。且10月02日之成交量為最近六十個營業日日平均成交量之7.54倍﹝第三款﹞。"
+      },
+      {
+        "symbol": "6155",
+        "name": "鈞寶",
+        "reason": "最近六個營業日累積收盤價漲幅達26.79%。且10月02日之成交量為最近六十個營業日日平均成交量之6.48倍﹝第三款﹞。且10月02日之週轉率為18.90%﹝第四款﹞。"
+      },
+      {
+        "symbol": "6225",
+        "name": "天瀚",
+        "reason": "最近六個營業日累積收盤價漲幅達30.93%。且10月02日之成交量為最近六十個營業日日平均成交量之5.03倍﹝第三款﹞。最近六十個營業日起迄兩個營業日之收盤價漲幅達452.00% 。最近九十個營業日起"
+      },
+      {
+        "symbol": "6426",
+        "name": "統新",
+        "reason": "最近六個營業日之累積週轉率為54.56%。且10月02日之週轉率為12.81%﹝第十款﹞。"
+      },
+      {
+        "symbol": "6533",
+        "name": "晶心科",
+        "reason": "最近六個營業日累積收盤價漲幅達34.37%。且六個營業日起迄兩個營業日收盤價價差達101.00元﹝第一款﹞。且10月02日之週轉率為14.95%﹝第四款﹞。"
+      },
+      {
+        "symbol": "6672",
+        "name": "騰輝電子-KY",
+        "reason": "最近六個營業日累積收盤價漲幅達39.12%。且六個營業日起迄兩個營業日收盤價價差達132.00元﹝第一款﹞。且10月02日之週轉率為20.19%﹝第四款﹞。"
+      },
+      {
+        "symbol": "8021",
+        "name": "尖點",
+        "reason": "10月02日之本益比為 111.49，且股價淨值比為12.90 。另當日週轉率為 6.25%，暨台灣摩根證券商成交買進金額達新臺幣壹億元以上，且占當日該有價證券總成交金額比率為12.88%。單一投資人"
+      },
+      {
+        "symbol": "8201",
+        "name": "無敵",
+        "reason": "最近六個營業日累積收盤價漲幅達34.84%﹝第一款﹞。且10月02日之成交量為最近六十個營業日日平均成交量之9.86倍﹝第三款﹞。"
+      },
+      {
+        "symbol": "8996",
+        "name": "高力",
+        "reason": "10月02日之本益比為 101.68，且股價淨值比為27.42 。另當日週轉率為 6.26%，且其股價淨值比較該類股股價淨值比四倍以上﹝第六款﹞。"
+      }
+    ],
+    "twse_punish": [
+      {
+        "symbol": "2468",
+        "name": "華經",
+        "start": "2026-09-22",
+        "end": "2026-10-02",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "2455",
+        "name": "全新",
+        "start": "2026-09-23",
+        "end": "2026-10-05",
+        "measure": "第二次處置"
+      },
+      {
+        "symbol": "6168",
+        "name": "宏齊",
+        "start": "2026-09-24",
+        "end": "2026-10-02",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "3443",
+        "name": "創意",
+        "start": "2026-09-29",
+        "end": "2026-10-05",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "6526",
+        "name": "達發",
+        "start": "2026-09-30",
+        "end": "2026-10-06",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "3016",
+        "name": "嘉晶",
+        "start": "2026-10-01",
+        "end": "2026-10-12",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "3055",
+        "name": "蔚華科",
+        "start": "2026-10-01",
+        "end": "2026-10-12",
+        "measure": "第二次處置"
+      },
+      {
+        "symbol": "2030",
+        "name": "彰源",
+        "start": "2026-10-02",
+        "end": "2026-10-08",
+        "measure": "第一次處置"
+      }
+    ],
+    "tpex_notice": [
+      {
+        "symbol": "3163",
+        "name": "波若威",
+        "reason": "當日本益比為72.76、股價淨值比為17.48且為其所屬產業類別股價淨值比之2.3倍、當日週轉率達8.52%(第六款)"
+      },
+      {
+        "symbol": "3441",
+        "name": "聯一光",
+        "reason": "當日本益比為86.83、股價淨值比為10.19且為其所屬產業類別股價淨值比之4.22倍、當日週轉率達70.25%(第六款)最近六個營業日(含當日)之累積週轉率為93.98%(第十款)"
+      },
+      {
+        "symbol": "3455",
+        "name": "由田",
+        "reason": "當日本益比為78.43、股價淨值比為6.98且為其所屬產業類別股價淨值比之2.89倍、當日週轉率達10.99%、元大證券公司當日賣出該有價證券之成交金額達4.94億元，且占當日該有價證券之總成交金額2"
+      },
+      {
+        "symbol": "3624",
+        "name": "光頡",
+        "reason": "最近六個營業日(含當日)之累積週轉率為153.83%，當日週轉率達34.52%(第十款)"
+      },
+      {
+        "symbol": "4174",
+        "name": "浩鼎",
+        "reason": "最近六個營業日(含當日)累積之最後成交價漲幅達36.68%(第一款)當日之成交量較最近六十個營業日日平均成交量放大8.81倍(第三款)"
+      },
+      {
+        "symbol": "4556",
+        "name": "旭然",
+        "reason": "最近六個營業日(含當日)累積之最後成交價漲幅達31.08%(第一款)最近九十個營業日(含當日)起迄兩個營業日之最後成交價漲幅達189.19%(第二款)當日之成交量較最近六十個營業日日平均成交量放大7."
+      },
+      {
+        "symbol": "4991",
+        "name": "環宇-KY",
+        "reason": "當日本益比為166.36、股價淨值比為14.54且為其所屬產業類別股價淨值比之2.59倍、當日週轉率達7.08%、元大證券公司當日買進該有價證券之成交金額達16.15億元，且占當日該有價證券之總成交金"
+      },
+      {
+        "symbol": "5013",
+        "name": "強新",
+        "reason": "最近六個營業日(含當日)累積之最後成交價漲幅達39.03%(第一款)"
+      },
+      {
+        "symbol": "5016",
+        "name": "松和",
+        "reason": "最近六個營業日(含當日)之日平均成交量較最近六十個營業日日平均成交量放大為7.53倍，當日成交量較最近六十個營業日之日平均成交量放大為32.06倍(第九款)"
+      },
+      {
+        "symbol": "6173",
+        "name": "信昌電",
+        "reason": "最近六個營業日(自當日之前一個營業日起)之當日沖銷成交量占總成交量比率達63.07%，當日之前一個營業日當日沖銷成交量占總成交量達67.68%（第十三款)"
+      },
+      {
+        "symbol": "6244",
+        "name": "茂迪",
+        "reason": "最近六個營業日(自當日之前一個營業日起)之借券賣出成交量占總成交量比率達12.33%，當日之前一個營業日借券賣出成交量較最近六十個營業日(自當日之前一個營業日起)之日平均借券賣出成交量放大為4倍(第十"
+      },
+      {
+        "symbol": "6661",
+        "name": "威健生技",
+        "reason": "最近六個營業日(含當日)之日平均成交量較最近六十個營業日日平均成交量放大為9.02倍，當日成交量較最近六十個營業日之日平均成交量放大為53.55倍(第九款)"
+      },
+      {
+        "symbol": "6708",
+        "name": "天擎",
+        "reason": "最近六個營業日(含當日)累積之最後成交價漲幅達49.51%(第一款)當日之成交量較最近六十個營業日日平均成交量放大10.3倍(第三款)"
+      },
+      {
+        "symbol": "8084",
+        "name": "巨虹",
+        "reason": "最近六個營業日(含當日)累積之最後成交價跌幅達59.47%(第一款)"
+      },
+      {
+        "symbol": "8358",
+        "name": "金居",
+        "reason": "當日本益比為77.35、股價淨值比為14.09且為其所屬產業類別股價淨值比之3.47倍、當日週轉率達7.95%(第六款)"
+      },
+      {
+        "symbol": "9960",
+        "name": "邁達康",
+        "reason": "最近六個營業日(含當日)之日平均成交量較最近六十個營業日日平均成交量放大為5.17倍，當日成交量較最近六十個營業日之日平均成交量放大為20.1倍(第九款)"
+      }
+    ],
+    "tpex_punish": [
+      {
+        "symbol": "6218",
+        "name": "豪勉",
+        "start": "2026-09-23",
+        "end": "2026-10-05",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "7772",
+        "name": "耀穎",
+        "start": "2026-09-24",
+        "end": "2026-10-02",
+        "measure": "再次處置"
+      },
+      {
+        "symbol": "3374",
+        "name": "精材",
+        "start": "2026-09-29",
+        "end": "2026-10-05",
+        "measure": "再次處置"
+      },
+      {
+        "symbol": "4542",
+        "name": "科嶠",
+        "start": "2026-09-29",
+        "end": "2026-10-05",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "4979",
+        "name": "華星光",
+        "start": "2026-09-29",
+        "end": "2026-10-05",
+        "measure": "再次處置"
+      },
+      {
+        "symbol": "7792",
+        "name": "安葆",
+        "start": "2026-09-30",
+        "end": "2026-10-06",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "2221",
+        "name": "大甲",
+        "start": "2026-10-01",
+        "end": "2026-10-12",
+        "measure": "再次處置"
+      },
+      {
+        "symbol": "3219",
+        "name": "倚強科",
+        "start": "2026-10-01",
+        "end": "2026-10-07",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "8084",
+        "name": "巨虹",
+        "start": "2026-10-02",
+        "end": "2026-10-08",
+        "measure": "第一次處置"
+      },
+      {
+        "symbol": "8227",
+        "name": "巨有科技",
+        "start": "2026-10-02",
+        "end": "2026-10-08",
+        "measure": "再次處置"
+      }
+    ],
+    "mops_material": {
+      "count": 187,
+      "since": "2026-10-01 17:36",
+      "items": []
     }
   }
 }
