@@ -31,6 +31,12 @@ python -m tw_stock_digest --no-drive --repo-dir data
 - **推播**：法人、估值與大盤指數到齊後自動開一則 GitHub issue（較晚公布的融資融券、借券、當沖不擋推播，補到後直接更新同一則並在內文註明哪些尚未公布），標題是當天重點、內文是完整摘要並 @ 儲存庫擁有者，GitHub 會寄 Email，也會推播到 GitHub 手機 App。同一天重新收集只會更新那則 issue；新的一天會關閉舊的。交易日到隔天中午仍未存到時，另開一則警示 issue，補齊後自動關閉。不想用可設定 repository variable `NOTIFY_ISSUES=false`。
 - **單一檔異常不影響整天**：個別證券數值無法解析或開高低收不一致時排除該檔並記錄在 manifest 與摘要；超過 0.5%（至少 3 檔）才視為來源異常而失敗。
 
+## 網頁儀表板
+
+[docs/index.html](docs/index.html) 是一頁式儀表板：最新數字（加權、櫃買、成交金額、外資與投信買賣超、外資期貨淨部位、Put/Call 比、融資餘額、站上 20 日均線比例）、六張走勢圖（可切換近 20 日／60 日／全部）、自選股表與今日重點。頁面是純靜態 HTML，讀取每次排程更新的 `data/dashboard.json`，沒有外部套件。
+
+啟用方式（只需做一次）：到儲存庫 **Settings → Pages → Build and deployment**，Source 選 **Deploy from a branch**，Branch 選 `main`、資料夾選 `/docs`，按 Save。一兩分鐘後網址是 `https://<帳號>.github.io/<儲存庫名稱>/`。資料直接從 `main` 讀，所以之後每天自動更新，不需要重新部署。
+
 ## 資料如何走
 
 1. 讀取 TWSE、TPEx 最新交易日快照，保存原始 JSON 與抓取時間。
@@ -89,6 +95,7 @@ python -m tw_stock_digest --no-drive --repo-dir data
 | `analysis-cache-<SHA256>.json` | 按完整輸入與模型保存的成功分析，供重跑重用 |
 | `manifest.json` | 來源、日期、抓取時間、列數與資料檔案 SHA-256；GitHub 版本另列原始來源校驗碼 |
 | `latest.md`、`latest.json` | 最近保存的交易日摘要與分析狀態；Drive／output 為最新完成報告 |
+| `dashboard.json` | 網頁儀表板用的精簡資料：每個已保存交易日一筆，加上最新一天的重點與自選股（只在 `data/`） |
 | `status.json` | 本次執行結果與失敗階段；收集失敗仍保留已取回原始檔 |
 
 完整本機資料在 `output/daily/YYYY-MM-DD/`，本次原始回應另存 `output/raw/`。GitHub 保存在 `data/daily/YYYY-MM-DD/`，不包含體積較大的原始 JSON；它們可從 Actions artifact 下載。Drive 日期資料夾直接放於專案專屬根資料夾下。CSV 的股票代碼是字串；Excel 匯入時請將 `symbol` 指定為文字，以保留 `0050` 前導零。

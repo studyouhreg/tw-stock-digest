@@ -62,6 +62,9 @@ jobs:
           if [[ "$WAIT" == "true" ]]; then args+=(--wait); fi
           if [[ -n "$REQUEST_DATE" ]]; then args+=(--date "$REQUEST_DATE"); fi
           python -m tw_stock_digest "${args[@]}"
+      - name: Refresh the dashboard data
+        if: ${{ !cancelled() && env.DEMO != 'true' }}
+        run: python -m tw_stock_digest.dashboard --repo-dir data
       - name: Commit validated data even if an optional service failed
         if: ${{ !cancelled() && env.DEMO != 'true' }}
         run: bash scripts/commit_data.sh

@@ -141,7 +141,7 @@ def validate_archive(archive):
         return
     if not archive.is_dir():
         raise ValueError('Invalid archive directory')
-    if {p.name for p in archive.iterdir()} - {'README.md', 'daily', 'latest.json', 'latest.md'}:
+    if {p.name for p in archive.iterdir()} - {'README.md', 'daily', 'latest.json', 'latest.md', 'dashboard.json'}:
         raise ValueError('Unexpected repository archive entry')
     for entry in archive.iterdir():
         if entry.name != 'daily':
@@ -163,6 +163,10 @@ def validate_archive(archive):
             raise ValueError('Latest report does not match the archive')
     elif (archive / 'latest.json').exists() or (archive / 'latest.md').exists():
         raise ValueError('Latest report has no dated snapshot')
+    if (archive / 'dashboard.json').exists():
+        board = json.loads(read_file(archive / 'dashboard.json'))
+        if not isinstance(board, dict) or board.get('latest') != (max(dates) if dates else None):
+            raise ValueError('Dashboard data does not match the archive')
 
 
 if __name__ == '__main__':
