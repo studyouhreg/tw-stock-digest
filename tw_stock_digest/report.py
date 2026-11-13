@@ -381,11 +381,12 @@ def flags_lines(x):
 
 
 def announcements_lines(x):
-    lines = ['', '## 自選股重大訊息', '', f"全市場當日重大訊息 {x['count']} 則（截至收集時）。"]
+    since = f"自 {x['since'][5:]} 起" if x.get('since') else '前一交易日收盤後起'
+    lines = ['', '## 自選股重大訊息', '', f"公開資訊觀測站{since}至收集時的重大訊息；當日清單共 {x['count']:,} 則。"]
     if x['items']:
         lines += [''] + [f"- {i['date'][5:]} {i['time']} {i['symbol']} {i['name']}：{i['subject']}" for i in x['items']]
     else:
-        lines += ['', '自選股當日沒有重大訊息。']
+        lines += ['', '這段期間自選股沒有重大訊息。']
     return lines
 
 

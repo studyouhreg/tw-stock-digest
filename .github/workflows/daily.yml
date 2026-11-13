@@ -2,15 +2,14 @@ name: Taiwan stock digest
 
 on:
   schedule:
-    # Asia/Taipei 17:47, 19:17, 21:17, 23:17, then 08:17 and 13:17 the next day.
-    # The exchanges' per-date reports are out by late afternoon, so the first
-    # evening run that actually starts collects the day; the later ones fill
-    # in anything published late and recover days an earlier run missed.
-    # GitHub starts scheduled runs hours late and drops some, hence several
-    # slots. A run with nothing to do commits nothing and takes seconds.
-    - cron: '47 9 * * *'
-    - cron: '17 11,13,15 * * *'
-    - cron: '17 0,5 * * *'
+    # Asia/Taipei 13:17 to 00:17 every hour, and 08:17 the next morning.
+    # GitHub starts scheduled runs hours late, at unpredictable times, and
+    # drops some, so no single slot can be relied on. Instead: every run
+    # collects whatever is pending (seconds when there is nothing), and a run
+    # that starts on a trading-day afternoon waits for the evening reports
+    # (--wait), so the digest goes out the same evening whichever slot ran.
+    - cron: '17 5-16 * * *'
+    - cron: '17 0 * * *'
   workflow_dispatch:
     inputs:
       demo:
@@ -33,7 +32,7 @@ jobs:
   digest:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 350   # a run may wait from mid-afternoon until the evening reports are out
     permissions:
       contents: write
       issues: write
@@ -56,9 +55,11 @@ jobs:
           CLAUDE_MODEL: ${{ vars.CLAUDE_MODEL || 'claude-haiku-5-5' }}
           WATCHLIST: ${{ vars.WATCHLIST || '0050,2330,2317,2454,6488' }}
           REQUEST_DATE: ${{ inputs.expected_date }}
+          WAIT: ${{ github.event_name == 'schedule' && (vars.WAIT_FOR_CLOSE || 'true') || 'false' }}
         run: |
           args=(--repo-dir data)
           if [[ "$DEMO" == "true" ]]; then args+=(--demo); fi
+          if [[ "$WAIT" == "true" ]]; then args+=(--wait); fi
           if [[ -n "$REQUEST_DATE" ]]; then args+=(--date "$REQUEST_DATE"); fi
           python -m tw_stock_digest "${args[@]}"
       - name: Commit validated data even if an optional service failed

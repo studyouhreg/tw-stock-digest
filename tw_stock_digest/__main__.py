@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import sys
 
-from .daily import collect_pending, exit_code
+from .daily import collect_patiently, collect_pending, exit_code, live_sources
 from .demo import DEMO_DATE
 from .drive import Drive
 from .pipeline import run
@@ -42,6 +42,8 @@ def main():
     parser.add_argument('--demo', action='store_true', help='固定日期的合成資料；不呼叫雲端')
     parser.add_argument('--no-drive', action='store_true', help='略過 Google Drive；仍可使用 --repo-dir')
     parser.add_argument('--analyze', action='store_true', help='啟用一次付費 Claude API 呼叫或重用快取')
+    parser.add_argument('--wait', action='store_true',
+                        help='平日下午啟動時等到傍晚報表公布再收集（排程用；GitHub 排程啟動時間不固定）')
     args = parser.parse_args()
     watchlist = list(dict.fromkeys(s.strip().upper() for s in args.watchlist.split(',') if s.strip()))
     if len(watchlist) > 50 or any(not re.fullmatch(r'[0-9A-Z]{4,6}', s) for s in watchlist):
@@ -72,9 +74,11 @@ def main():
             return 1
         print(json.dumps(result, ensure_ascii=False))
         return 0
-    summary = collect_pending(args.output, watchlist, archive_root=args.repo_dir,
-                              only=dt.date.fromisoformat(target) if target else None,
-                              analysis_requested=enabled, configure_remote=configure_remote)
+    def collect():
+        return collect_pending(args.output, watchlist, archive_root=args.repo_dir,
+                               only=dt.date.fromisoformat(target) if target else None,
+                               analysis_requested=enabled, configure_remote=configure_remote)
+    summary = collect_patiently(collect, closed=lambda: live_sources()[2]()) if args.wait and not target else collect()
     print(json.dumps(summary, ensure_ascii=False))
     for day in summary['days']:
         if day['status'] == 'failed':

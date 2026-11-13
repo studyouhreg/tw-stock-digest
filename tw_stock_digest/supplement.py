@@ -108,11 +108,8 @@ def flags_section(p, watchlist, limit=15):
 
 
 def announcements_section(p):
-    parts = [p[name] for name in ('twse_material', 'tpex_material') if p.get(name)]
-    if not parts:
-        return None
-    items = sorted((i for part in parts for i in part['items']), key=lambda x: (x['date'], x['time'], x['symbol']))
-    return dict(count=sum(part['count'] for part in parts), items=items[-20:])
+    m = p.get('mops_material')
+    return dict(count=m['count'], since=m.get('since'), items=m['items'][-20:]) if m else None
 
 
 def revenue_section(p):

@@ -47,20 +47,21 @@ URLS = {
     'taifex_futures': TAIFEX + '/futContractsDateDown',
     'taifex_pcr': TAIFEX + '/pcRatioDown',
     'taifex_large': TAIFEX + '/largeTraderFutDown',
-    'twse_notice': 'https://openapi.twse.com.tw/v1/announcement/notice',
-    'twse_punish': 'https://openapi.twse.com.tw/v1/announcement/punish',
-    'tpex_notice': 'https://www.tpex.org.tw/openapi/v1/tpex_trading_warning_information',
-    'tpex_punish': 'https://www.tpex.org.tw/openapi/v1/tpex_disposal_information',
-    'twse_material': 'https://openapi.twse.com.tw/v1/opendata/t187ap04_L',
-    'tpex_material': 'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap04_O',
+    'twse_notice': TWSE + '/announcement/notice?startDate={d:%Y%m%d}&endDate={d:%Y%m%d}&response=json',
+    'twse_punish': TWSE + '/announcement/punish?startDate={s:%Y%m%d}&endDate={d:%Y%m%d}&response=json',
+    'tpex_notice': TPEX + ('/bulletin/attention?startDate={d:%Y}%2F{d:%m}%2F{d:%d}'
+                           '&endDate={d:%Y}%2F{d:%m}%2F{d:%d}&response=json'),
+    'tpex_punish': TPEX + ('/bulletin/disposal?startDate={s:%Y}%2F{s:%m}%2F{s:%d}'
+                           '&endDate={d:%Y}%2F{d:%m}%2F{d:%d}&response=json'),
+    'mops_material': 'https://mops.twse.com.tw/mops/api/t05st02',
     'twse_revenue': 'https://openapi.twse.com.tw/v1/opendata/t187ap05_L',
     'tpex_revenue': 'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_O',
     'twse_exright': 'https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL',
     'tpex_exright': 'https://www.tpex.org.tw/openapi/v1/tpex_exright_prepost',
     'tdcc': 'https://opendata.tdcc.com.tw/getOD.ashx?id=1-5',
 }
-AS_OF_NOW = ('twse_notice', 'twse_punish', 'tpex_notice', 'tpex_punish', 'twse_material', 'tpex_material',
-             'twse_revenue', 'tpex_revenue', 'twse_exright', 'tpex_exright', 'tdcc')
+AS_OF_NOW = ('twse_revenue', 'tpex_revenue', 'twse_exright', 'tpex_exright', 'tdcc')
+DISPOSAL_LOOKBACK = 30   # days of disposal announcements that can still be in force
 # Per-symbol columns each source fills in extras.csv, and the market it covers (None: both).
 SYMBOL_FIELDS = {
     'twse_margin': ('TWSE', ('margin', 'margin_change', 'short', 'short_change')),
@@ -277,50 +278,85 @@ def daytrade(data, day):
 
 # --- "as of now" lists ---------------------------------------------------------
 
-def notice(rows, day, code='Code', name='Name', reason='TradingInfoForAttention'):
-    """Securities named in the day's attention announcement."""
-    listed = [r for r in rows if str(r.get(code, '')).strip()]
-    dates = {as_date(r['Date']) for r in listed if str(r.get('Date', '')).strip()}
-    if dates and max(dates) < day:
+def published(data):
+    return isinstance(data, dict) and str(data.get('stat', 'ok')).lower() == 'ok'
+
+
+def notice(data, day, settled):
+    """Securities in the day's attention announcement (per-date report of either exchange).
+
+    An empty list on the day itself usually means the evening announcement is
+    not out yet; once the day is over (``settled``) it means there were none.
+    """
+    if not published(data):
         raise NotPublished()
-    if dates and min(dates) > day:
-        raise Unavailable()
-    return [dict(symbol=r[code].strip(), name=r[name].strip(), reason=str(r[reason]).strip()[:120])
-            for r in listed if SUPPORTED.fullmatch(r[code].strip()) and as_date(r['Date']) == day], {}
-
-
-def punish(rows, day, code='Code', name='Name', measure='DispositionMeasures'):
-    """Securities whose disposal period has not ended by the day."""
+    fields, rows = table(data, field='證券代號')
+    if not rows and not settled:
+        raise NotPublished()
+    c = {name: i for i, name in enumerate(fields)}
     out = []
     for r in rows:
-        symbol = str(r.get(code, '')).strip()
-        period = re.findall(r'\d{3}/?\d{2}/?\d{2}', str(r.get('DispositionPeriod', '')))
+        symbol = str(r[c['證券代號']]).strip()
+        if SUPPORTED.fullmatch(symbol):
+            out.append(dict(symbol=symbol, name=text_of(r[c['證券名稱']]), reason=text_of(r[c['注意交易資訊']])[:100]))
+    return sorted(out, key=lambda x: x['symbol']), {}
+
+
+def punish(data, day):
+    """Securities under a disposal announced by the day whose period has not ended."""
+    if not published(data):
+        raise NotPublished()
+    fields, rows = table(data, field='證券代號')
+    c = {name: i for i, name in enumerate(fields)}
+    period_field = next((f for f in fields if f.startswith('處置起')), None)  # 起迄 (TWSE) or 起訖 (TPEx)
+    out = {}
+    for r in rows if period_field else []:
+        symbol = str(r[c['證券代號']]).strip()
+        period = re.findall(r'\d{3}/\d{2}/\d{2}', str(r[c[period_field]]))
         if not SUPPORTED.fullmatch(symbol) or len(period) != 2:
             continue
-        start, end = as_date(period[0]), as_date(period[1])
-        if end >= day:
-            out.append(dict(symbol=symbol, name=r[name].strip(), start=start.isoformat(), end=end.isoformat(),
-                            measure=str(r.get(measure, '')).strip()[:40]))
-    return sorted(out, key=lambda x: (x['start'], x['symbol'])), {}
+        announced, start, end = as_date(r[c['公布日期']]), as_date(period[0]), as_date(period[1])
+        if announced <= day <= end and (symbol not in out or end.isoformat() > out[symbol]['end']):
+            name = re.sub(r'\(\.\./.*$', '', text_of(r[c['證券名稱']]))  # TPEx appends a link
+            out[symbol] = dict(symbol=symbol, name=name, start=start.isoformat(), end=end.isoformat(),
+                               measure=text_of(r[c['處置措施']])[:20])
+    return sorted(out.values(), key=lambda x: (x['start'], x['symbol'])), {}
 
 
-def material(rows, day, watchlist, code='公司代號', name='公司名稱'):
-    """Material announcements for the watchlist made on or after the day, plus the day's total count."""
-    items, count = [], 0
-    for raw in rows:
-        r = {str(k).strip(): v for k, v in raw.items()}
-        try:
-            spoke = as_date(r['發言日期'])
-        except (KeyError, ValueError):
-            continue
-        count += spoke == day
-        symbol = str(r.get(code, '')).strip()
-        if symbol in watchlist and spoke >= day:
-            clock = re.sub(r'\D', '', str(r.get('發言時間', ''))).zfill(6)
-            items.append(dict(symbol=symbol, name=str(r.get(name, '')).strip(), date=spoke.isoformat(),
-                              time=f'{clock[:2]}:{clock[2:4]}',
-                              subject=re.sub(r'\s+', '', str(r.get('主旨', '')))[:90]))
-    return dict(count=count, items=sorted(items, key=lambda x: (x['date'], x['time'], x['symbol']))), {}
+def material_days(day):
+    """Calendar days whose announcement lists cover everything since the last close.
+
+    A day's list starts at 17:30 the evening before, so after a weekend the
+    two days before Monday are needed as well.
+    """
+    days = [day]
+    while days[-1].weekday() in (0, 6) and len(days) < 3:  # Monday needs Sunday, Sunday needs Saturday
+        days.append(days[-1] - dt.timedelta(days=1))
+    return days[::-1]
+
+
+def material(lists, day, watchlist):
+    """Material announcements since the previous close: the watchlist's, and how many the day's list holds."""
+    if not lists or not all(isinstance(d, dict) and isinstance((d.get('result') or {}).get('data'), list)
+                            for d in lists):
+        raise NotPublished()
+    items, count, since = {}, 0, None
+    for position, data in enumerate(lists):
+        for r in data['result']['data']:
+            try:
+                spoke, clock, symbol = as_date(r[0]), str(r[1]).strip(), str(r[2]).strip()
+            except (ValueError, IndexError):
+                continue
+            if spoke > day:
+                continue
+            count += position == len(lists) - 1
+            stamp = f'{spoke.isoformat()} {clock[:5]}'
+            since = stamp if since is None or stamp < since else since
+            if symbol in watchlist:
+                subject = re.sub(r'\s+', '', str(r[4]))[:90]
+                items[(stamp, symbol, subject)] = dict(symbol=symbol, name=str(r[3]).strip(), date=spoke.isoformat(),
+                                                       time=clock[:5], subject=subject)
+    return dict(count=count, since=since, items=[items[k] for k in sorted(items)]), {}
 
 
 def revenue(rows, watchlist):
@@ -397,11 +433,23 @@ def tdcc(text, day):
 
 # --- fetching ------------------------------------------------------------------
 
-def fetch_auxiliary(trade_date, watchlist, *, http=None, get=None, post=None, text=None, today=None,
-                    clock=time.monotonic, budget=BUDGET_SECONDS):
+def post_json_persistently(http, url, payload, attempts=8, pause=2.0, sleep=time.sleep):
+    """MOPS, like TWSE, answers some requests with a security page; a few short retries get through."""
+    for attempt in range(attempts):
+        try:
+            return http.json('POST', url, payload=payload, headers={'User-Agent': 'Mozilla/5.0'}, retry=False)
+        except RemoteError:
+            if attempt == attempts - 1:
+                raise
+            sleep(pause)
+
+
+def fetch_auxiliary(trade_date, watchlist, *, http=None, get=None, post=None, text=None, post_json=None,
+                    today=None, clock=time.monotonic, budget=BUDGET_SECONDS):
     """Return (per-symbol values, payload by source, status by source). Never raises for one bad source.
 
-    ``get(url)`` returns JSON, ``post(url, form)`` and ``text(url)`` return decoded text.
+    ``get(url)`` returns JSON, ``post(url, form)`` and ``text(url)`` return decoded
+    text, ``post_json(url, payload)`` returns JSON.
     The whole call is bounded: once ``budget`` seconds have passed, or a host
     has been unreachable twice in a row, the remaining sources are marked
     failed and left to the next run.
@@ -416,12 +464,17 @@ def fetch_auxiliary(trade_date, watchlist, *, http=None, get=None, post=None, te
                  'Accept': 'text/csv,*/*'}).decode('cp950', errors='replace'))
     text = text or (lambda url: http.request('GET', url, headers={'User-Agent': 'Mozilla/5.0', 'Accept': '*/*'})
                     .decode('utf-8-sig', errors='replace'))
+    post_json = post_json or (lambda url, payload: post_json_persistently(http, url, payload))
     watch = set(watchlist)
     week = f'queryStartDate={day - dt.timedelta(days=10):%Y%%2F%m%%2F%d}&queryEndDate={day:%Y%%2F%m%%2F%d}'
     single = f'queryStartDate={day:%Y%%2F%m%%2F%d}&queryEndDate={day:%Y%%2F%m%%2F%d}'
 
     def url(name):
-        return URLS[name].format(d=day)
+        return URLS[name].format(d=day, s=day - dt.timedelta(days=DISPOSAL_LOOKBACK))
+
+    def announcements():
+        return [post_json(URLS['mops_material'], dict(year=str(d.year - 1911), month=f'{d:%m}', day=f'{d:%d}'))
+                for d in material_days(day)]
 
     sources = {
         'twse_index': lambda: twse_index(get(url('twse_index')), day),
@@ -436,15 +489,11 @@ def fetch_auxiliary(trade_date, watchlist, *, http=None, get=None, post=None, te
         'tpex_sbl': lambda: lending(get(url('tpex_sbl')), day),
         'twse_daytrade': lambda: daytrade(get(url('twse_daytrade')), day),
         'tpex_daytrade': lambda: daytrade(get(url('tpex_daytrade')), day),
-        'twse_notice': lambda: notice(get(URLS['twse_notice']), day),
-        'twse_punish': lambda: punish(get(URLS['twse_punish']), day),
-        'tpex_notice': lambda: notice(get(URLS['tpex_notice']), day, 'SecuritiesCompanyCode', 'CompanyName',
-                                      'TradingInformation'),
-        'tpex_punish': lambda: punish(get(URLS['tpex_punish']), day, 'SecuritiesCompanyCode', 'CompanyName',
-                                      'DispositionReasons'),
-        'twse_material': lambda: material(get(URLS['twse_material']), day, watch),
-        'tpex_material': lambda: material(get(URLS['tpex_material']), day, watch, 'SecuritiesCompanyCode',
-                                          'CompanyName'),
+        'twse_notice': lambda: notice(get(url('twse_notice')), day, today > day),
+        'twse_punish': lambda: punish(get(url('twse_punish')), day),
+        'tpex_notice': lambda: notice(get(url('tpex_notice')), day, today > day),
+        'tpex_punish': lambda: punish(get(url('tpex_punish')), day),
+        'mops_material': lambda: material(announcements(), day, watch),
         'twse_revenue': lambda: revenue(get(URLS['twse_revenue']), watch),
         'tpex_revenue': lambda: revenue(get(URLS['tpex_revenue']), watch),
         'twse_exright': lambda: exright(get(URLS['twse_exright']), day, watch),

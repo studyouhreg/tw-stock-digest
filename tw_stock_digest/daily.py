@@ -11,6 +11,8 @@ import datetime as dt
 import json
 from pathlib import Path
 import re
+import sys
+import time
 from zoneinfo import ZoneInfo
 
 from . import backfill
@@ -23,6 +25,11 @@ from .pipeline import already_saved, json_bytes, run, saved_latest, write
 TAIPEI = ZoneInfo('Asia/Taipei')
 WINDOW_DAYS = 7                    # how far back a missed day is still recovered
 REPORTS_READY = dt.time(14, 30)    # today's per-date reports are not asked for earlier
+RETRY_UNTIL = dt.time(20, 0)       # next calendar day: a source still missing then is no longer waited for
+EVENING = dt.time(17, 45)          # flows, valuation and the indices are normally out by now
+WAIT_FROM = dt.time(14, 0)         # a scheduled run starting between these two waits for EVENING
+GIVE_UP = dt.time(19, 30)          # ... and keeps looking for what is still missing until this time
+POLL_SECONDS = 600
 REPORT_NOTES = {
     'TWSE': 'TWSE quotes from the per-date report (MI_INDEX); ex-rights changes from the reference price table.',
     'TPEX': 'TPEx quotes from the per-date report; volume and turnover exclude odd lots.',
@@ -61,8 +68,58 @@ def pending_days(saved, latest, now, snapshot_days=(), *, analysis_wanted=False)
         if iso not in saved:
             pending.append(day)
         elif latest and latest['trade_date'] == iso and not already_saved(latest, iso, analysis_wanted):
-            pending.append(day)
+            # A source that never arrives must not have the day collected again forever.
+            waited_enough = now >= dt.datetime.combine(day + dt.timedelta(days=1), RETRY_UNTIL, TAIPEI)
+            if not waited_enough or not already_saved({**latest, 'extras_complete': True}, iso, analysis_wanted):
+                pending.append(day)
     return pending
+
+
+def seconds_until_evening(now):
+    """How long a run that starts on a weekday afternoon should wait for the evening reports."""
+    if now.weekday() >= 5 or not WAIT_FROM <= now.time() < EVENING:
+        return 0
+    return (dt.datetime.combine(now.date(), EVENING, TAIPEI) - now).total_seconds()
+
+
+def worth_waiting(summary, now):
+    """True in the evening while today's digest still lacks what makes it worth pushing."""
+    if now.weekday() >= 5 or not EVENING <= now.time() < GIVE_UP:
+        return False
+    today = now.date().isoformat()
+    for day in summary['days']:
+        if day['trade_date'] == today:
+            return ((day['status'] == 'skipped' and day.get('reason') == 'not_published')
+                    or (day['status'] == 'failed' and day.get('reason') == 'source_unreachable')
+                    or (day['status'] == 'complete' and not day.get('core_complete', True)))
+    return False
+
+
+def collect_patiently(collect, *, closed=None, now=None, sleep=time.sleep):
+    """Collect now and, when the run started before the evening reports, once more when they are out.
+
+    GitHub starts scheduled runs hours late and at unpredictable times. A run
+    that happens to start on a trading-day afternoon therefore stays alive
+    until the evening instead of finishing empty-handed, so the digest goes
+    out the same evening whichever slot actually ran.
+    """
+    now = now or current_time
+    summary = collect()
+    pause = seconds_until_evening(now())
+    if pause:
+        try:
+            is_closed = closed is not None and now().date() in closed()
+        except (RemoteError, ValueError, KeyError, TypeError):
+            is_closed = False
+        if is_closed:
+            return summary
+        print(f'Waiting {pause / 60:.0f} minutes for the evening reports.', file=sys.stderr, flush=True)
+        sleep(pause)
+        summary = collect()
+    while worth_waiting(summary, now()):
+        sleep(POLL_SECONDS)
+        summary = collect()
+    return summary
 
 
 HOLIDAYS = 'https://openapi.twse.com.tw/v1/holidaySchedule/holidaySchedule'

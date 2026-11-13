@@ -40,7 +40,7 @@ def demo_auxiliary(trade_date, watchlist):
         'twse_margin': dict(margin_twd=3.2e11, margin_change_twd=1.5e9, margin_lots=7000000.0,
                             margin_lots_change=12000.0, short_lots=250000.0, short_lots_change=-3000.0),
         'twse_notice': [], 'twse_punish': [],
-        'twse_material': dict(count=120, items=[dict(symbol='2330', name='示範上市公司', date=trade_date, time='17:30',
+        'mops_material': dict(count=120, since=f'{trade_date} 08:00', items=[dict(symbol='2330', name='示範上市公司', date=trade_date, time='17:30',
                                                      subject='示範：公告董事會決議')]),
         'twse_revenue': dict(month=trade_date[:7], reported=900, median_yoy_pct=4.2, items=[
             dict(symbol='2330', name='示範上市公司', month=trade_date[:7], revenue_100m_twd=2500.0, mom_pct=3.1,
