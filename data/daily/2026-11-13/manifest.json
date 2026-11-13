@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "trade_date": "2026-11-13",
+  "demo": false,
+  "captured_at_utc": "2026-11-13T06:39:31.244210+00:00",
+  "sources": {
+    "TWSE": "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date=20261113&type=ALLBUT0999&response=json",
+    "TPEX": "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date=2026%2F11%2F13&type=EW&response=json"
+  },
+  "row_count": 2349,
+  "files_sha256": {
+    "analysis.json": "b5cdb35c7e03708c80452973e5217fe345950f2a559cb6cfe620f02cef98e365",
+    "analysis.md": "fe699ad42b5fe38d6bee6705724e0e863161d13f1481ebb20c5d7df2c799b41f",
+    "claude-prompt.md": "c3df0a2d3b5033be319354fab2fc20cfee8f8389f75913d654984792ab359c5a",
+    "context.json": "973e99a0ef4bf37cdc0f9c881038499fdf0045d22ef3e43612bf92dc4b2407f8",
+    "extras.csv": "2025f25967b3f38cfebc19a220ecc805d29de6021254cff4e641537a2fab291c",
+    "facts.md": "75444b72464863b6f4fa1fced09e8a61be6cab051994d118ea733b99fcb2dd28",
+    "quotes.csv": "b0a1ecc68dc7661b7abeec0b14f854ccec2e97c7d441bb34e573a7d1cf64470c"
+  },
+  "extras": {
+    "twse_flows": "not_published",
+    "tpex_flows": "not_published",
+    "twse_valuation": "not_published",
+    "tpex_valuation": "not_published",
+    "twse_industry": "ok",
+    "tpex_industry": "ok"
+  },
+  "source_note": "TWSE quotes from the per-date report (MI_INDEX); ex-rights changes from the reference price table. TPEx quotes from the per-date report; volume and turnover exclude odd lots.",
+  "analysis": "disabled",
+  "archive_format": "github-normalized-v1",
+  "source_files_sha256": {
+    "analysis.json": "b5cdb35c7e03708c80452973e5217fe345950f2a559cb6cfe620f02cef98e365",
+    "analysis.md": "fe699ad42b5fe38d6bee6705724e0e863161d13f1481ebb20c5d7df2c799b41f",
+    "raw_TWSE.json": "5fe9ea8fa446b8ffb6f03146db08fac86807bac9e615bcc572d7b8cbd90d3716",
+    "raw_TPEX.json": "8b2915d74d45ca04aff7a0f6b9182a652b6fab585d88af2d8776c16bc4733ddd",
+    "quotes.csv": "b0a1ecc68dc7661b7abeec0b14f854ccec2e97c7d441bb34e573a7d1cf64470c",
+    "extras.csv": "2025f25967b3f38cfebc19a220ecc805d29de6021254cff4e641537a2fab291c",
+    "context.json": "973e99a0ef4bf37cdc0f9c881038499fdf0045d22ef3e43612bf92dc4b2407f8",
+    "claude-prompt.md": "c3df0a2d3b5033be319354fab2fc20cfee8f8389f75913d654984792ab359c5a",
+    "facts.md": "75444b72464863b6f4fa1fced09e8a61be6cab051994d118ea733b99fcb2dd28"
+  },
+  "raw_storage": "Actions artifact (14 days) and optional Google Drive; not stored in git"
+}
